@@ -31,8 +31,7 @@ def print_table(result: ScanResult, console: Console | None = None) -> None:
         if result.iac_checked:
             table.add_column("Managed by", overflow="fold")
         for f in result.findings:
-            resource = f"{f.name}\n[dim]{f.resource_id}[/dim]" if f.name else f.resource_id
-            row = [f"{f.monthly_cost:,.2f}", f.check, f.region, resource, f.description]
+            row = [f"{f.monthly_cost:,.2f}", f.check, f.region, _resource_cell(f), f.description]
             if result.owners_checked:
                 row.append(_owner_cell(f))
             if result.iac_checked:
@@ -68,6 +67,14 @@ def print_table(result: ScanResult, console: Console | None = None) -> None:
         console.print(f"\n[yellow]{len(result.errors)} problem(s) during the scan:[/yellow]")
         for error in result.errors:
             console.print(f"  [yellow]•[/yellow] {error}")
+
+
+def _resource_cell(f: Finding) -> str:
+    if not f.name:
+        return f.resource_id
+    if f.resource_id.startswith("arn:"):
+        return f.name  # full ARN is in the JSON/CSV output; it swamps the table
+    return f"{f.name}\n[dim]{f.resource_id}[/dim]"
 
 
 def _owner_cell(f: Finding) -> str:

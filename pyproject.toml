@@ -1,6 +1,6 @@
 [project]
 name = "costwatch"
-version = "0.1.0"
+version = "1.0.0"
 description = "Find wasted AWS spend: idle and orphaned resources with estimated monthly cost"
 readme = "README.md"
 authors = [
@@ -11,11 +11,15 @@ license = "Apache-2.0"
 license-files = ["LICENSE"]
 keywords = ["aws", "finops", "cost", "cloud", "waste", "devops"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 5 - Production/Stable",
     "Environment :: Console",
     "Intended Audience :: System Administrators",
     "Intended Audience :: Developers",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Typing :: Typed",
     "Topic :: System :: Systems Administration",
 ]
 dependencies = [
@@ -30,13 +34,16 @@ build-backend = "uv_build"
 [dependency-groups]
 dev = [
     "moto[ec2,elb,elbv2,rds,server,cloudwatch,logs,autoscaling,s3]>=5.2.3",
+    "mypy>=2.4.0",
     "pytest>=9.1.1",
+    "pytest-cov>=7.1.0",
     "ruff>=0.16.10",
 ]
 
 [project.urls]
 Repository = "https://github.com/jonmelia/costwatch"
 Issues = "https://github.com/jonmelia/costwatch/issues"
+Changelog = "https://github.com/jonmelia/costwatch/blob/main/CHANGELOG.md"
 
 [project.scripts]
 costwatch = "costwatch.cli:run"
@@ -49,3 +56,20 @@ select = ["E", "F", "I", "UP", "B", "SIM"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.coverage.run]
+source = ["costwatch"]
+
+[tool.coverage.report]
+fail_under = 100
+show_missing = true
+
+[tool.mypy]
+python_version = "3.12"
+files = ["src"]
+check_untyped_defs = true
+warn_unused_ignores = true
+
+[[tool.mypy.overrides]]
+module = ["boto3", "boto3.*", "botocore", "botocore.*"]
+ignore_missing_imports = true

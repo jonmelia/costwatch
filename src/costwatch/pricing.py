@@ -10,13 +10,14 @@ import gzip
 import json
 from functools import cache
 from importlib.resources import files
+from typing import Any
 
 HOURS_PER_MONTH = 730
 FALLBACK_REGION = "us-east-1"
 PUBLIC_IPV4_HOUR = 0.005  # the same in every region
 
 # us-east-1 values, used when a price is missing for a region
-DEFAULTS = {
+DEFAULTS: dict[str, Any] = {
     "ebs_gb_month": {"gp3": 0.08, "gp2": 0.10, "io1": 0.125, "io2": 0.125, "st1": 0.045,
                      "sc1": 0.015, "standard": 0.05},
     "ebs_iops_month": {"gp3": 0.005, "io1": 0.065, "io2": 0.065},

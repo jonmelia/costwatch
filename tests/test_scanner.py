@@ -93,3 +93,60 @@ def test_keyboard_interrupt_exits_cleanly(monkeypatch, capsys):
 
     assert exit_info.value.code == 130
     assert "Interrupted" in capsys.readouterr().err
+
+
+def test_table_with_owners_iac_ignored_and_errors():
+    from rich.console import Console
+
+    from costwatch import report
+    from costwatch.models import Finding
+    from costwatch.scanner import ScanResult
+
+    findings = [
+        Finding("unattached-ebs-volume", REGION, "vol-1", "500 GiB", 50.0, "delete", name="data",
+                owner="alice", owner_source="tag:Owner", managed_by="terraform",
+                iac_address="aws_ebs_volume.data"),
+        Finding("unused-elastic-ip", REGION, "eipalloc-1", "unused", 3.65, "release",
+                managed_by="unmanaged"),
+    ]  # fmt: skip
+    result = ScanResult(
+        account_id="123456789012",
+        regions=[REGION, "xx-nowhere-1"],
+        findings=findings,
+        errors=["us-east-1 idle_instances: AccessDenied: no"],
+        ignored=2,
+        owners_checked=True,
+        iac_checked=True,
+    )
+    console = Console(record=True, width=200)
+
+    report.print_table(result, console)
+
+    text = console.export_text()
+    for expected in (
+        "Waste by owner",
+        "alice",
+        "Waste by management",
+        "aws_ebs_volume.data",
+        "unmanaged",
+        "2 finding(s) ignored",
+        "no price data for xx-nowhere-1",
+        "1 problem(s) during the scan",
+        "Total: ~$53.65/month",
+    ):
+        assert expected in text, expected
+
+    markdown = report.to_markdown(result)
+    assert "| alice |" in markdown and "terraform `aws_ebs_volume.data`" in markdown
+    assert "<details>" in markdown
+
+
+def test_no_findings_message():
+    from rich.console import Console
+
+    from costwatch import report
+    from costwatch.scanner import ScanResult
+
+    console = Console(record=True, width=120)
+    report.print_table(ScanResult(account_id="1", regions=[REGION]), console)
+    assert "No waste found across 1 region(s)" in console.export_text()
