@@ -20,25 +20,14 @@ jobs:
       - run: uv run python scripts/update_prices.py --workers 8
       # PRs opened with GITHUB_TOKEN don't trigger CI, so test here
       - run: uv run pytest -q
-      - name: Open a pull request if prices changed
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          if [ -z "$(git status --porcelain -- src/costwatch/data/prices.json.gz)" ]; then
-            echo "Prices unchanged"
-            exit 0
-          fi
-          # One branch and PR, updated each week, so unmerged runs don't pile up
-          branch="prices/update"
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git switch -c "$branch"
-          git add src/costwatch/data/prices.json.gz
-          git commit -m "Update AWS prices"
-          git push --force -u origin "$branch"
-          if [ -z "$(gh pr list --head "$branch" --state open --json number --jq '.[].number')" ]; then
-            gh pr create --base main --head "$branch" --title "Update AWS prices" \
-              --body "Weekly refresh from the public AWS price list (scripts/update_prices.py)."
-          else
-            echo "Updated the open pull request"
-          fi
+      # Opens a PR when prices changed, or updates the open one; does nothing if unchanged
+      - uses: peter-evans/create-pull-request@v7
+        with:
+          branch: prices/update
+          add-paths: src/costwatch/data/prices.json.gz
+          commit-message: Update AWS prices
+          title: Update AWS prices
+          body: Weekly refresh from the public AWS price list (`scripts/update_prices.py`).
+          author: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
+          committer: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
+          delete-branch: true
