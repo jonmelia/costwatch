@@ -5,6 +5,11 @@ on:
     - cron: "0 6 * * 1"  # weekly, Mondays 06:00 UTC
   workflow_dispatch:
 
+# Runs share the prices/update branch, so never overlap
+concurrency:
+  group: update-prices
+  cancel-in-progress: false
+
 permissions:
   contents: write
   pull-requests: write
