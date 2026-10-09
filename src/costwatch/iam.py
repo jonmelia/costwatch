@@ -23,6 +23,7 @@ POLICY = {
                 "elasticloadbalancing:DescribeLoadBalancers",
                 "elasticloadbalancing:DescribeTargetGroups",
                 "elasticloadbalancing:DescribeTargetHealth",
+                "elasticloadbalancing:DescribeTags",
                 "rds:DescribeDBSnapshots",
                 "rds:DescribeDBClusterSnapshots",
                 "rds:DescribeDBInstances",
