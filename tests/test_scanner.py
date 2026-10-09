@@ -50,3 +50,18 @@ def test_cli_json_output(session, ec2, capsys):
 def test_cli_policy(capsys):
     assert main(["policy"]) == 0
     assert "ec2:DescribeVolumes" in capsys.readouterr().out
+
+
+def test_errors_are_shortened_to_code_and_message():
+    from botocore.exceptions import ClientError
+
+    from costwatch.aws import short_error
+
+    e = ClientError(
+        {"Error": {"Code": "AccessDenied", "Message": "User x is\n not authorized " + "a" * 300}},
+        "DescribeVolumes",
+    )
+
+    text = short_error(e)
+    assert text.startswith("AccessDenied: User x is not authorized")
+    assert len(text) == 160 and "\n" not in text

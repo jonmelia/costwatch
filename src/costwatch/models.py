@@ -19,6 +19,9 @@ class Finding:
     monthly_cost: float  # estimated USD per month
     recommendation: str
     name: str | None = None
+    tags: dict[str, str] = field(default_factory=dict)
+    owner: str | None = None
+    owner_source: str | None = None  # e.g. "tag:Owner", "cloudtrail"
 
     def to_dict(self) -> dict:
         return asdict(self)

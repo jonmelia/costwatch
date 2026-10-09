@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 import boto3
 from botocore.exceptions import BotoCoreError, ClientError
 
-from costwatch.aws import client
+from costwatch.aws import client, short_error
 from costwatch.checks import ALL_CHECKS
 from costwatch.models import Finding, ScanConfig
 
@@ -18,6 +18,7 @@ class ScanResult:
     regions: list[str]
     findings: list[Finding] = field(default_factory=list)
     errors: list[str] = field(default_factory=list)
+    owners_checked: bool = False
 
     @property
     def total_monthly_cost(self) -> float:
@@ -56,7 +57,7 @@ def scan(
                 result.findings.extend(future.result())
             except (ClientError, BotoCoreError) as e:
                 # One denied API or disabled region shouldn't sink the whole scan
-                result.errors.append(f"{region} {name}: {e}")
+                result.errors.append(f"{region} {name}: {short_error(e)}")
 
     result.findings.sort(key=lambda f: f.monthly_cost, reverse=True)
     result.errors.sort()

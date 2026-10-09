@@ -3,7 +3,7 @@ from datetime import timedelta
 import boto3
 
 from costwatch import pricing
-from costwatch.aws import client
+from costwatch.aws import client, tag_dict
 from costwatch.models import Finding, ScanConfig
 
 # Automated backups expire with the retention period; manual snapshots are kept until deleted.
@@ -28,6 +28,7 @@ def old_rds_snapshots(session: boto3.Session, region: str, config: ScanConfig) -
                     region=region,
                     resource_id=snap["DBSnapshotArn"],
                     name=snap["DBSnapshotIdentifier"],
+                    tags=tag_dict(snap.get("TagList")),
                     description=(
                         f"{size} GiB manual snapshot of {snap['Engine']} instance "
                         f"{snap['DBInstanceIdentifier']}, {(config.now - created).days} days old "
@@ -60,6 +61,7 @@ def old_rds_cluster_snapshots(
                     region=region,
                     resource_id=snap["DBClusterSnapshotArn"],
                     name=snap["DBClusterSnapshotIdentifier"],
+                    tags=tag_dict(snap.get("TagList")),
                     description=(
                         f"{size} GiB manual snapshot of {snap['Engine']} cluster "
                         f"{snap['DBClusterIdentifier']}, {(config.now - created).days} days old "

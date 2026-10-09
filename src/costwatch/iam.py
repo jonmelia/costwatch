@@ -21,6 +21,7 @@ POLICY = {
                 "elasticloadbalancing:DescribeTargetHealth",
                 "rds:DescribeDBSnapshots",
                 "rds:DescribeDBClusterSnapshots",
+                "cloudtrail:LookupEvents",
             ],
             "Resource": "*",
         }

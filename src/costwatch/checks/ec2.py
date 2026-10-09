@@ -4,7 +4,7 @@ from datetime import UTC, datetime, timedelta
 import boto3
 
 from costwatch import pricing
-from costwatch.aws import chunks, client, name_tag
+from costwatch.aws import chunks, client, name_tag, tag_dict
 from costwatch.models import Finding, ScanConfig
 
 # e.g. "User initiated (2024-01-15 10:30:00 GMT)"
@@ -23,6 +23,7 @@ def unused_elastic_ips(session: boto3.Session, region: str, config: ScanConfig) 
                 region=region,
                 resource_id=addr.get("AllocationId", addr["PublicIp"]),
                 name=name_tag(addr.get("Tags")),
+                tags=tag_dict(addr.get("Tags")),
                 description=f"Elastic IP {addr['PublicIp']} is not associated with anything",
                 monthly_cost=pricing.public_ipv4_monthly(),
                 recommendation="Release the address if you don't need to keep it.",
@@ -81,6 +82,7 @@ def long_stopped_instances(
                 region=region,
                 resource_id=iid,
                 name=name_tag(instance.get("Tags")),
+                tags=tag_dict(instance.get("Tags")),
                 description=(
                     f"{instance['InstanceType']} stopped for {(config.now - since).days} days; "
                     "its EBS volumes are still billed"

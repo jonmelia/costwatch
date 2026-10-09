@@ -1,23 +1,38 @@
 import threading
 
 import boto3
+from botocore.config import Config
+from botocore.exceptions import BotoCoreError, ClientError
 
 # boto3 sessions are not thread-safe when creating clients; the clients themselves are.
 _client_lock = threading.Lock()
 
 
-def client(session: boto3.Session, service: str, region: str):
+def client(session: boto3.Session, service: str, region: str, config: Config | None = None):
     with _client_lock:
-        return session.client(service, region_name=region)
+        return session.client(service, region_name=region, config=config)
+
+
+def tag_dict(tags: list[dict] | None) -> dict[str, str]:
+    return {t["Key"]: t.get("Value", "") for t in tags or [] if "Key" in t}
 
 
 def name_tag(tags: list[dict] | None) -> str | None:
-    for tag in tags or []:
-        if tag.get("Key") == "Name":
-            return tag.get("Value")
-    return None
+    return tag_dict(tags).get("Name")
 
 
 def chunks(items: list, size: int):
     for i in range(0, len(items), size):
         yield items[i : i + size]
+
+
+def short_error(e: ClientError | BotoCoreError, limit: int = 160) -> str:
+    """One-line error: 'AccessDenied: User ... is not authorized ...'."""
+    if isinstance(e, ClientError):
+        err = e.response.get("Error", {})
+        code = err.get("Code") or str(e.response.get("ResponseMetadata", {}).get("HTTPStatusCode"))
+        text = f"{code}: {err.get('Message') or ''}".rstrip(": ")
+    else:
+        text = str(e)
+    text = " ".join(text.split())
+    return text if len(text) <= limit else text[: limit - 1] + "…"

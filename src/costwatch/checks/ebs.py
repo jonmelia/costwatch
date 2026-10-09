@@ -3,7 +3,7 @@ from datetime import timedelta
 import boto3
 
 from costwatch import pricing
-from costwatch.aws import client, name_tag
+from costwatch.aws import client, name_tag, tag_dict
 from costwatch.models import Finding, ScanConfig
 
 
@@ -22,6 +22,7 @@ def unattached_volumes(session: boto3.Session, region: str, config: ScanConfig) 
                     region=region,
                     resource_id=vol["VolumeId"],
                     name=name_tag(vol.get("Tags")),
+                    tags=tag_dict(vol.get("Tags")),
                     description=(
                         f"{vol['Size']} GiB {vol['VolumeType']} volume not attached to any "
                         f"instance (created {age_days} days ago)"
@@ -59,6 +60,7 @@ def old_snapshots(session: boto3.Session, region: str, config: ScanConfig) -> li
                     region=region,
                     resource_id=snap["SnapshotId"],
                     name=name_tag(snap.get("Tags")),
+                    tags=tag_dict(snap.get("Tags")),
                     description=(
                         f"{snap['VolumeSize']} GiB snapshot, {age_days} days old, not used by "
                         "any AMI (cost is an upper bound; snapshots are incremental)"

@@ -8,6 +8,7 @@ from rich.console import Console
 from costwatch import __version__, report
 from costwatch.iam import policy_json
 from costwatch.models import ScanConfig
+from costwatch.owners import resolve_owners
 from costwatch.scanner import scan
 
 
@@ -34,6 +35,14 @@ def build_parser() -> argparse.ArgumentParser:
     scan_p.add_argument(
         "--min-cost", type=float, default=0.0, help="Hide findings under this $/month"
     )
+    scan_p.add_argument(
+        "--owners",
+        action="store_true",
+        help=(
+            "Find who owns each resource: owner tags, then who created it in CloudTrail "
+            "(last 90 days only; slower)"
+        ),
+    )
     scan_p.add_argument("--json", action="store_true", help="Output JSON instead of a table")
 
     sub.add_parser("policy", help="Print the IAM policy costwatch needs")
@@ -53,16 +62,17 @@ def main(argv: list[str] | None = None) -> int:
         session = boto3.Session(profile_name=args.profile)
         with console.status("Scanning AWS account..."):
             result = scan(session, regions=args.regions, config=config)
+        result.findings = [f for f in result.findings if f.monthly_cost >= args.min_cost]
+        if args.owners:
+            with console.status("Looking up owners in CloudTrail..."):
+                result.errors.extend(resolve_owners(session, result.findings))
+            result.owners_checked = True
     except NoCredentialsError:
-        console.print(
-            "[red]No AWS credentials found.[/red] Pick a profile with awsprofile or pass --profile."
-        )
+        console.print("[red]No AWS credentials found.[/red] Set AWS_PROFILE or pass --profile.")
         return 2
     except (ClientError, BotoCoreError) as e:
         console.print(f"[red]AWS error:[/red] {e}")
         return 2
-
-    result.findings = [f for f in result.findings if f.monthly_cost >= args.min_cost]
 
     if args.json:
         print(report.to_json(result))
