@@ -69,7 +69,11 @@ def long_stopped_instances(
             for vol in page["Volumes"]:
                 for attachment in vol.get("Attachments", []):
                     cost = pricing.ebs_volume_monthly(
-                        vol["VolumeType"], vol["Size"], vol.get("Iops"), vol.get("Throughput")
+                        region,
+                        vol["VolumeType"],
+                        vol["Size"],
+                        vol.get("Iops"),
+                        vol.get("Throughput"),
                     )
                     iid = attachment["InstanceId"]
                     volume_cost[iid] = volume_cost.get(iid, 0.0) + cost
@@ -127,9 +131,9 @@ def idle_instances(session: boto3.Session, region: str, config: ScanConfig) -> l
         # Need most of the window covered, and CPU never above the threshold
         if len(values) < config.idle_days // 2 or max(values) >= config.idle_cpu_percent:
             continue
-        cost = pricing.ec2_instance_monthly(instance["InstanceType"])
+        cost = pricing.ec2_instance_monthly(region, instance["InstanceType"])
         if cost is None:
-            price_note = " (price not in table)"
+            price_note = " (no on-demand Linux price for this type)"
         elif instance.get("InstanceLifecycle") == "spot":
             price_note = " (spot: on-demand price shown, actual is lower)"
         else:
@@ -212,7 +216,7 @@ def unused_amis(session: boto3.Session, region: str, config: ScanConfig) -> list
                     f"AMI {age_days} days old with {size} GiB of snapshots, not used by any "
                     "instance or launch template (cost is an upper bound)"
                 ),
-                monthly_cost=pricing.snapshot_monthly(size),
+                monthly_cost=pricing.snapshot_monthly(region, size),
                 recommendation="Deregister the AMI, then delete its snapshots.",
             )
         )

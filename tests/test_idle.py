@@ -93,7 +93,7 @@ def test_idle_rds_instance(session, rds, cloudwatch, future_config):
     findings = idle_rds_instances(session, REGION, future_config)
 
     assert [f.name for f in findings] == ["idle-db"]
-    assert findings[0].monthly_cost == pytest.approx(0.136 / 8 * 730 + 20 * 0.115)
+    assert findings[0].monthly_cost == pytest.approx(0.018 * 730 + 20 * 0.115)
 
 
 def test_retained_rds_backups(session, rds, config):

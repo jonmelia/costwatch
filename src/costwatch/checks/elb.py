@@ -86,7 +86,7 @@ def idle_load_balancers(session: boto3.Session, region: str, config: ScanConfig)
                 name=lb["LoadBalancerName"],
                 tags=tags.get(arn, {}),
                 description=f"{lb_type} load balancer {reason}",
-                monthly_cost=pricing.load_balancer_monthly(lb_type),
+                monthly_cost=pricing.load_balancer_monthly(region, lb_type),
                 recommendation="Delete the load balancer if nothing is meant to use it.",
             )
         )
@@ -146,7 +146,7 @@ def idle_classic_load_balancers(
                 name=name,
                 tags=tags.get(name, {}),
                 description=f"Classic load balancer {reason}",
-                monthly_cost=pricing.load_balancer_monthly("classic"),
+                monthly_cost=pricing.load_balancer_monthly(region, "classic"),
                 recommendation="Delete it, or migrate to an ALB/NLB if still needed.",
             )
         )

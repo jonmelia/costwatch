@@ -5,6 +5,7 @@ from collections.abc import Callable
 from rich.console import Console
 from rich.table import Table
 
+from costwatch import pricing
 from costwatch.models import Finding
 from costwatch.scanner import ScanResult
 
@@ -56,6 +57,8 @@ def print_table(result: ScanResult, console: Console | None = None) -> None:
             f"across {len(result.regions)} region(s)"
         )
 
+    console.print(f"[dim]{_pricing_note(result)}[/dim]")
+
     if result.errors:
         console.print(f"\n[yellow]{len(result.errors)} problem(s) during the scan:[/yellow]")
         for error in result.errors:
@@ -66,6 +69,17 @@ def _owner_cell(f: Finding) -> str:
     if not f.owner:
         return "[dim]unknown[/dim]"
     return f"{f.owner}\n[dim]{f.owner_source}[/dim]"
+
+
+def _unpriced_regions(result: ScanResult) -> list[str]:
+    return [r for r in result.regions if not pricing.has_region(r)]
+
+
+def _pricing_note(result: ScanResult) -> str:
+    note = f"Prices: AWS on-demand list prices of {(pricing.publication_date() or '?')[:10]}"
+    if unpriced := _unpriced_regions(result):
+        note += f"; no price data for {', '.join(unpriced)}, so us-east-1 prices are used there"
+    return note + "."
 
 
 def _iac_cell(f: Finding) -> str:
@@ -97,6 +111,8 @@ def to_json(result: ScanResult) -> str:
             "owners_checked": result.owners_checked,
             "iac_checked": result.iac_checked,
             "total_monthly_cost": round(result.total_monthly_cost, 2),
+            "prices_as_of": pricing.publication_date(),
+            "regions_priced_as_us_east_1": _unpriced_regions(result),
             "findings": [f.to_dict() for f in result.findings],
             "errors": result.errors,
         },

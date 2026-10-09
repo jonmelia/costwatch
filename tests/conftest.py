@@ -1,12 +1,35 @@
+import copy
 from datetime import UTC, datetime, timedelta
 
 import boto3
 import pytest
 from moto import mock_aws
 
+from costwatch import pricing
 from costwatch.models import ScanConfig
 
 REGION = "us-east-1"
+
+
+def _fixture_prices() -> dict:
+    """Fixed prices so tests don't change when the bundled price list is refreshed."""
+    us_east_1 = copy.deepcopy(pricing.DEFAULTS)
+    us_east_1["ec2_hour"] = {"t3.micro": 0.0104, "m5.large": 0.096, "m5.2xlarge": 0.384}
+    us_east_1["rds_hour"] = {"PostgreSQL": {"db.t3.micro": [0.018, 0.036]}}
+    eu_west_2 = copy.deepcopy(us_east_1)
+    eu_west_2["ebs_gb_month"]["gp3"] = 0.0928
+    eu_west_2["ec2_hour"]["m5.large"] = 0.111
+    return {
+        "publication_date": "2026-01-01T00:00:00Z",
+        "regions": {"us-east-1": us_east_1, "eu-west-2": eu_west_2},
+    }
+
+
+@pytest.fixture(autouse=True)
+def fixed_prices():
+    pricing.use_data(_fixture_prices())
+    yield
+    pricing.use_data(None)
 
 
 @pytest.fixture(autouse=True)

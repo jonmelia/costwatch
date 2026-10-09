@@ -31,7 +31,11 @@ def unattached_volumes(session: boto3.Session, region: str, config: ScanConfig) 
                         f"instance (created {ago(age_days)})"
                     ),
                     monthly_cost=pricing.ebs_volume_monthly(
-                        vol["VolumeType"], vol["Size"], vol.get("Iops"), vol.get("Throughput")
+                        region,
+                        vol["VolumeType"],
+                        vol["Size"],
+                        vol.get("Iops"),
+                        vol.get("Throughput"),
                     ),
                     recommendation="Snapshot it if the data matters, then delete the volume.",
                 )
@@ -73,7 +77,7 @@ def old_snapshots(session: boto3.Session, region: str, config: ScanConfig) -> li
                         f"{age_days} days old, not used by any AMI "
                         "(cost is an upper bound; snapshots are incremental)"
                     ),
-                    monthly_cost=pricing.snapshot_monthly(snap["VolumeSize"], archived),
+                    monthly_cost=pricing.snapshot_monthly(region, snap["VolumeSize"], archived),
                     recommendation=(
                         "Delete if no longer needed."
                         if archived
@@ -97,7 +101,7 @@ def gp2_volumes(session: boto3.Session, region: str, config: ScanConfig) -> list
     )
     for page in pages:
         for vol in page["Volumes"]:
-            savings = pricing.gp2_to_gp3_monthly_savings(vol["Size"])
+            savings = pricing.gp2_to_gp3_monthly_savings(region, vol["Size"])
             if savings <= 0:
                 continue
             findings.append(
