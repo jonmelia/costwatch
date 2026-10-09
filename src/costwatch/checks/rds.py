@@ -35,7 +35,7 @@ def old_rds_snapshots(session: boto3.Session, region: str, config: ScanConfig) -
                         f"{snap['DBInstanceIdentifier']}, {(config.now - created).days} days old "
                         "(cost is an upper bound)"
                     ),
-                    monthly_cost=pricing.rds_snapshot_monthly(size),
+                    monthly_cost=pricing.rds_snapshot_monthly(region, size),
                     recommendation=_RECOMMENDATION,
                 )
             )
@@ -68,7 +68,7 @@ def old_rds_cluster_snapshots(
                         f"{snap['DBClusterIdentifier']}, {(config.now - created).days} days old "
                         "(cost is an upper bound)"
                     ),
-                    monthly_cost=pricing.rds_snapshot_monthly(size, aurora=aurora),
+                    monthly_cost=pricing.rds_snapshot_monthly(region, size, aurora=aurora),
                     recommendation=_RECOMMENDATION,
                 )
             )
@@ -110,10 +110,19 @@ def idle_rds_instances(session: boto3.Session, region: str, config: ScanConfig) 
         if not values or max(values) > 0:
             continue
         aurora = db["Engine"].startswith("aurora")
-        compute = pricing.rds_instance_monthly(db["DBInstanceClass"], db.get("MultiAZ", False))
+        multi_az = db.get("MultiAZ", False)
+        compute = pricing.rds_instance_monthly(
+            region, db["DBInstanceClass"], db["Engine"], multi_az
+        )
         # Aurora storage is billed per cluster, not per instance
-        storage = 0.0 if aurora else db.get("AllocatedStorage", 0) * pricing.RDS_STORAGE_GB_MONTH
-        price_note = "" if compute is not None else " (instance price not in table)"
+        storage = (
+            0.0
+            if aurora
+            else pricing.rds_storage_monthly(
+                region, db.get("StorageType", "gp2"), db.get("AllocatedStorage", 0), multi_az
+            )
+        )
+        price_note = "" if compute is not None else " (instance price unknown for this engine)"
         findings.append(
             Finding(
                 check="idle-rds-instance",
@@ -157,7 +166,7 @@ def retained_rds_backups(session: boto3.Session, region: str, config: ScanConfig
                         f"{size} GiB of automated backups kept after instance {identifier} "
                         "was deleted (kept until their retention period ends)"
                     ),
-                    monthly_cost=pricing.rds_snapshot_monthly(size),
+                    monthly_cost=pricing.rds_snapshot_monthly(region, size),
                     recommendation=(
                         "Delete the retained backups if you won't restore from them "
                         "(take a manual snapshot first to keep one copy)."

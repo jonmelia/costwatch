@@ -54,7 +54,7 @@ def idle_nat_gateways(session: boto3.Session, region: str, config: ScanConfig) -
                 description=(
                     f"NAT gateway sent {sum(values) / 1024:,.0f} KiB in {config.idle_days} days"
                 ),
-                monthly_cost=pricing.nat_gateway_monthly(),
+                monthly_cost=pricing.nat_gateway_monthly(region),
                 recommendation=(
                     "Delete it if nothing in the private subnets needs outbound internet, "
                     "or use VPC endpoints instead."

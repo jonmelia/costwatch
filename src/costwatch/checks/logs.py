@@ -24,7 +24,7 @@ def log_groups_without_retention(
                     description=(
                         f"{stored / 2**30:,.1f} GiB of logs kept forever (no retention set)"
                     ),
-                    monthly_cost=pricing.log_storage_monthly(stored),
+                    monthly_cost=pricing.log_storage_monthly(region, stored),
                     recommendation="Set a retention period, e.g. 30–90 days, or export to S3.",
                 )
             )
