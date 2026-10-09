@@ -24,7 +24,12 @@ def build_parser() -> argparse.ArgumentParser:
         dest="regions",
         help="Region to scan; repeat for several (default: all enabled regions)",
     )
-    scan_p.add_argument("--snapshot-age-days", type=int, default=90)
+    scan_p.add_argument(
+        "--snapshot-age-days",
+        type=int,
+        default=90,
+        help="Flag EBS and manual RDS snapshots older than this (default: 90)",
+    )
     scan_p.add_argument("--stopped-days", type=int, default=30)
     scan_p.add_argument(
         "--min-cost", type=float, default=0.0, help="Hide findings under this $/month"

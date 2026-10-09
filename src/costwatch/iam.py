@@ -19,6 +19,8 @@ POLICY = {
                 "elasticloadbalancing:DescribeLoadBalancers",
                 "elasticloadbalancing:DescribeTargetGroups",
                 "elasticloadbalancing:DescribeTargetHealth",
+                "rds:DescribeDBSnapshots",
+                "rds:DescribeDBClusterSnapshots",
             ],
             "Resource": "*",
         }

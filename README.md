@@ -21,6 +21,7 @@ Total: ~$110.08/month (~$1,321/year) across 17 region(s)
 | `unused-elastic-ip` | Elastic IPs not associated with anything | $0.005/hour |
 | `long-stopped-instance` | Instances stopped for 30+ days | Their attached EBS volumes |
 | `idle-load-balancer` | ALB/NLB/GWLB/Classic with no registered targets | Hourly LB charge |
+| `old-rds-snapshot` | Manual RDS/Aurora snapshots older than 90 days | Upper bound: allocated size × backup storage rate |
 
 Prices are us-east-1 on-demand approximations (`src/costwatch/pricing.py`), good for ranking
 waste rather than matching your bill to the cent.

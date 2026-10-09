@@ -1,6 +1,7 @@
 from costwatch.checks.ebs import old_snapshots, unattached_volumes
 from costwatch.checks.ec2 import long_stopped_instances, unused_elastic_ips
 from costwatch.checks.elb import idle_classic_load_balancers, idle_load_balancers
+from costwatch.checks.rds import old_rds_cluster_snapshots, old_rds_snapshots
 
 ALL_CHECKS = [
     unattached_volumes,
@@ -9,4 +10,6 @@ ALL_CHECKS = [
     long_stopped_instances,
     idle_load_balancers,
     idle_classic_load_balancers,
+    old_rds_snapshots,
+    old_rds_cluster_snapshots,
 ]
