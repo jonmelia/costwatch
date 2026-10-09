@@ -191,7 +191,7 @@ def main() -> int:
         "regions": dict(sorted(result.items())),
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    # mtime=0 so identical prices give an identical file, and no spurious monthly diff
+    # mtime=0 so identical prices give an identical file, and no spurious diff
     payload = json.dumps(data, separators=(",", ":"), sort_keys=True).encode()
     with gzip.GzipFile(args.output, "wb", mtime=0) as f:
         f.write(payload)

@@ -1,6 +1,6 @@
 """On-demand prices in USD per region, from AWS's public price list.
 
-The data ships with the package (data/prices.json.gz) and is refreshed monthly by
+The data ships with the package (data/prices.json.gz) and is refreshed weekly by
 scripts/update_prices.py. Regions missing from it fall back to us-east-1 prices, and prices
 missing for a region fall back to the us-east-1 defaults below. Estimates rank waste; they don't
 reproduce your bill (no discounts, Savings Plans or free tier).

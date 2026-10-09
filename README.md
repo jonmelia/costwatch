@@ -31,7 +31,7 @@ Prices: AWS on-demand list prices of 2026-10-08.
 - **Read-only.** It only calls `Describe*`, `List*`, `Get*` and `Lookup*` APIs.
   `costwatch policy` prints exactly what it needs.
 - **Local.** It runs on your machine with your credentials. Nothing is sent anywhere.
-- **Priced per region** from AWS's public price list, refreshed monthly.
+- **Priced per region** from AWS's public price list, refreshed weekly.
 
 ## Install
 
@@ -84,7 +84,7 @@ Tune them with `--snapshot-age-days`, `--stopped-days` and `--idle-days`, and pi
 Each finding is priced with **its own region's** on-demand list prices: EBS by volume type,
 IOPS and throughput; EC2 by instance type; RDS by engine, class and Multi-AZ; load balancers,
 NAT gateways, snapshots and log storage. The prices ship inside the package, built from
-AWS's public price list and refreshed monthly, so a scan needs no pricing permissions and makes
+AWS's public price list and refreshed weekly, so a scan needs no pricing permissions and makes
 no pricing calls.
 
 They're list prices: discounts, Savings Plans, Reserved Instances and the free tier aren't

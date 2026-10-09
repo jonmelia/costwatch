@@ -2,7 +2,7 @@ name: Update prices
 
 on:
   schedule:
-    - cron: "0 6 2 * *"  # monthly
+    - cron: "0 6 * * 1"  # weekly, Mondays 06:00 UTC
   workflow_dispatch:
 
 permissions:
@@ -28,12 +28,17 @@ jobs:
             echo "Prices unchanged"
             exit 0
           fi
-          branch="prices/$(date -u +%Y-%m-%d)"
+          # One branch and PR, updated each week, so unmerged runs don't pile up
+          branch="prices/update"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git switch -c "$branch"
           git add src/costwatch/data/prices.json.gz
           git commit -m "Update AWS prices"
-          git push -u origin "$branch"
-          gh pr create --base main --title "Update AWS prices" \
-            --body "Monthly refresh from the public AWS price list (scripts/update_prices.py)."
+          git push --force -u origin "$branch"
+          if [ -z "$(gh pr list --head "$branch" --state open --json number --jq '.[].number')" ]; then
+            gh pr create --base main --head "$branch" --title "Update AWS prices" \
+              --body "Weekly refresh from the public AWS price list (scripts/update_prices.py)."
+          else
+            echo "Updated the open pull request"
+          fi
