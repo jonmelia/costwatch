@@ -3,7 +3,6 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 
 import boto3
-from botocore.exceptions import BotoCoreError, ClientError
 
 from costwatch.aws import client, short_error
 from costwatch.checks import ALL_CHECKS
@@ -56,8 +55,9 @@ def scan(
             name, region = futures[future]
             try:
                 result.findings.extend(future.result())
-            except (ClientError, BotoCoreError) as e:
-                # One denied API or disabled region shouldn't sink the whole scan
+            except Exception as e:
+                # One denied API, disabled region or unexpected response shouldn't sink the
+                # whole scan
                 result.errors.append(f"{region} {name}: {short_error(e)}")
 
     result.findings.sort(key=lambda f: f.monthly_cost, reverse=True)

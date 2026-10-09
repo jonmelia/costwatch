@@ -39,7 +39,7 @@ Repository = "https://github.com/jonmelia/costwatch"
 Issues = "https://github.com/jonmelia/costwatch/issues"
 
 [project.scripts]
-costwatch = "costwatch.cli:main"
+costwatch = "costwatch.cli:run"
 
 [tool.ruff]
 line-length = 100

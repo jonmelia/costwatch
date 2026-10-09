@@ -4,7 +4,10 @@ import boto3
 
 from costwatch import pricing
 from costwatch.aws import client, name_tag, tag_dict
+from costwatch.fmt import ago
 from costwatch.models import Finding, ScanConfig
+
+_LIFECYCLE_TAG_PREFIXES = ("aws:backup:", "aws:dlm:")
 
 
 def unattached_volumes(session: boto3.Session, region: str, config: ScanConfig) -> list[Finding]:
@@ -25,7 +28,7 @@ def unattached_volumes(session: boto3.Session, region: str, config: ScanConfig) 
                     tags=tag_dict(vol.get("Tags")),
                     description=(
                         f"{vol['Size']} GiB {vol['VolumeType']} volume not attached to any "
-                        f"instance (created {age_days} days ago)"
+                        f"instance (created {ago(age_days)})"
                     ),
                     monthly_cost=pricing.ebs_volume_monthly(
                         vol["VolumeType"], vol["Size"], vol.get("Iops"), vol.get("Throughput")
@@ -53,21 +56,28 @@ def old_snapshots(session: boto3.Session, region: str, config: ScanConfig) -> li
         for snap in page["Snapshots"]:
             if snap["StartTime"] > cutoff or snap["SnapshotId"] in ami_snapshots:
                 continue
+            tags = tag_dict(snap.get("Tags"))
+            if any(k.startswith(_LIFECYCLE_TAG_PREFIXES) for k in tags):
+                continue  # AWS Backup / Data Lifecycle Manager apply their own retention
+            archived = snap.get("StorageTier") == "archive"
             age_days = (config.now - snap["StartTime"]).days
             findings.append(
                 Finding(
                     check="old-ebs-snapshot",
                     region=region,
                     resource_id=snap["SnapshotId"],
-                    name=name_tag(snap.get("Tags")),
-                    tags=tag_dict(snap.get("Tags")),
+                    name=tags.get("Name"),
+                    tags=tags,
                     description=(
-                        f"{snap['VolumeSize']} GiB snapshot, {age_days} days old, not used by "
-                        "any AMI (cost is an upper bound; snapshots are incremental)"
+                        f"{snap['VolumeSize']} GiB {'archived ' if archived else ''}snapshot, "
+                        f"{age_days} days old, not used by any AMI "
+                        "(cost is an upper bound; snapshots are incremental)"
                     ),
-                    monthly_cost=pricing.snapshot_monthly(snap["VolumeSize"]),
+                    monthly_cost=pricing.snapshot_monthly(snap["VolumeSize"], archived),
                     recommendation=(
-                        "Delete if no longer needed, or move to the archive tier "
+                        "Delete if no longer needed."
+                        if archived
+                        else "Delete if no longer needed, or move to the archive tier "
                         "for long-term retention."
                     ),
                 )

@@ -59,3 +59,19 @@ def test_snapshot_used_by_ami_is_not_flagged(session, ec2, future_config):
 
     ids = {f.resource_id for f in old_snapshots(session, REGION, future_config)}
     assert ami_snapshot not in ids
+
+
+@pytest.mark.parametrize("tag_key", ["aws:backup:source-resource", "aws:dlm:lifecycle-policy-id"])
+def test_backup_and_dlm_snapshots_are_skipped(session, ec2, future_config, tag_key):
+    vol = ec2.create_volume(AvailabilityZone=f"{REGION}a", Size=50)
+    snap = ec2.create_snapshot(VolumeId=vol["VolumeId"])
+    ec2.create_tags(Resources=[snap["SnapshotId"]], Tags=[{"Key": tag_key, "Value": "x"}])
+
+    ids = {f.resource_id for f in old_snapshots(session, REGION, future_config)}
+    assert snap["SnapshotId"] not in ids
+
+
+def test_unattached_volume_created_today(session, ec2, config):
+    ec2.create_volume(AvailabilityZone=f"{REGION}a", Size=10)
+
+    assert "(created today)" in unattached_volumes(session, REGION, config)[0].description

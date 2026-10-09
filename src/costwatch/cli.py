@@ -108,5 +108,14 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
+def run() -> None:
+    """Console entry point."""
+    try:
+        sys.exit(main())
+    except KeyboardInterrupt:
+        print("Interrupted.", file=sys.stderr)
+        sys.exit(130)
+
+
 if __name__ == "__main__":
-    sys.exit(main())
+    run()

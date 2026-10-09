@@ -36,3 +36,8 @@ def test_rds_instance_monthly_doubles_for_multi_az():
     single = pricing.rds_instance_monthly("db.t3.micro")
     assert single == pytest.approx(0.136 / 8 * 730)
     assert pricing.rds_instance_monthly("db.t3.micro", multi_az=True) == pytest.approx(2 * single)
+
+
+def test_archived_snapshot_is_cheaper():
+    assert pricing.snapshot_monthly(100, archived=True) == pytest.approx(1.25)
+    assert pricing.snapshot_monthly(100) == pytest.approx(5.0)

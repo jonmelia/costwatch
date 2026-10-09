@@ -22,6 +22,7 @@ GP3_IOPS_MONTH = 0.005  # above the 3,000 free baseline
 GP3_THROUGHPUT_MONTH = 0.04  # per MB/s above the 125 MB/s free baseline
 
 SNAPSHOT_GB_MONTH = 0.05
+SNAPSHOT_ARCHIVE_GB_MONTH = 0.0125
 RDS_STORAGE_GB_MONTH = 0.115
 LOGS_GB_MONTH = 0.03
 NAT_GATEWAY_HOUR = 0.045
@@ -49,8 +50,8 @@ def ebs_volume_monthly(
     return cost
 
 
-def snapshot_monthly(size_gb: int) -> float:
-    return size_gb * SNAPSHOT_GB_MONTH
+def snapshot_monthly(size_gb: int, archived: bool = False) -> float:
+    return size_gb * (SNAPSHOT_ARCHIVE_GB_MONTH if archived else SNAPSHOT_GB_MONTH)
 
 
 def rds_snapshot_monthly(size_gb: int, aurora: bool = False) -> float:

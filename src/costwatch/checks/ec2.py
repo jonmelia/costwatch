@@ -128,7 +128,12 @@ def idle_instances(session: boto3.Session, region: str, config: ScanConfig) -> l
         if len(values) < config.idle_days // 2 or max(values) >= config.idle_cpu_percent:
             continue
         cost = pricing.ec2_instance_monthly(instance["InstanceType"])
-        price_note = "" if cost is not None else " (price not in table)"
+        if cost is None:
+            price_note = " (price not in table)"
+        elif instance.get("InstanceLifecycle") == "spot":
+            price_note = " (spot: on-demand price shown, actual is lower)"
+        else:
+            price_note = ""
         findings.append(
             Finding(
                 check="idle-ec2-instance",

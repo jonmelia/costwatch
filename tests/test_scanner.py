@@ -65,3 +65,31 @@ def test_errors_are_shortened_to_code_and_message():
     text = short_error(e)
     assert text.startswith("AccessDenied: User x is not authorized")
     assert len(text) == 160 and "\n" not in text
+
+
+def test_unexpected_exception_in_a_check_is_contained(session, ec2):
+    def buggy(session, region, config):
+        raise KeyError("VolumeType")
+
+    def fine(session, region, config):
+        return []
+
+    result = scan(session, regions=[REGION], checks=[buggy, fine])
+
+    assert result.errors == [f"{REGION} buggy: KeyError: 'VolumeType'"]
+
+
+def test_keyboard_interrupt_exits_cleanly(monkeypatch, capsys):
+    import pytest
+
+    from costwatch import cli
+
+    def interrupted(argv=None):
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(cli, "main", interrupted)
+    with pytest.raises(SystemExit) as exit_info:
+        cli.run()
+
+    assert exit_info.value.code == 130
+    assert "Interrupted" in capsys.readouterr().err
