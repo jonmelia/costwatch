@@ -17,6 +17,7 @@ class ScanResult:
     regions: list[str]
     findings: list[Finding] = field(default_factory=list)
     errors: list[str] = field(default_factory=list)
+    ignored: int = 0
     owners_checked: bool = False
     iac_checked: bool = False
 
