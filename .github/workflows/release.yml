@@ -3,20 +3,34 @@ name: Release
 on:
   release:
     types: [published]
+  # Used by auto-release.yml: releases created with GITHUB_TOKEN don't trigger the event above
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Tag to publish, e.g. v1.0.2
+        required: true
+      dry_run:
+        description: Build and check everything, but don't publish to PyPI
+        type: boolean
+        default: false
 
 jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    env:
+      TAG: ${{ inputs.tag || github.ref_name }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.tag || github.ref }}
       - uses: astral-sh/setup-uv@v7
       - name: Check the tag matches the package version
         run: |
           version="v$(uv version --short)"
-          if [ "$version" != "$GITHUB_REF_NAME" ]; then
-            echo "Tag $GITHUB_REF_NAME doesn't match pyproject version $version" >&2
+          if [ "$version" != "$TAG" ]; then
+            echo "Tag $TAG doesn't match pyproject version $version" >&2
             exit 1
           fi
       - run: uv sync --locked
@@ -29,6 +43,7 @@ jobs:
 
   publish:
     needs: build
+    if: ${{ !inputs.dry_run }}
     runs-on: ubuntu-latest
     environment:
       name: pypi
@@ -41,3 +56,15 @@ jobs:
           name: dist
           path: dist/
       - uses: pypa/gh-action-pypi-publish@release/v1
+
+  verify-download:
+    # Dry runs still prove the artifact round trip works
+    needs: build
+    if: ${{ inputs.dry_run }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v7
+        with:
+          name: dist
+          path: dist/
+      - run: ls -l dist/ && test -n "$(ls dist/*.whl)"

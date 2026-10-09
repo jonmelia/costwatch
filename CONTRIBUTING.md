@@ -50,3 +50,9 @@ add a price, extend the script and `pricing.py`, and keep a us-east-1 default in
 1. Update `CHANGELOG.md` and bump the version: `uv version X.Y.Z`.
 2. Merge to `main`, then create a GitHub release `vX.Y.Z`. The *Release* workflow checks the tag
    matches, runs the tests and publishes to PyPI with trusted publishing.
+
+**Price releases are automatic.** When the weekly *Update prices* job finds new prices it bumps
+the patch version and adds a CHANGELOG entry in the same pull request. Once that's merged
+(automatically, or by you after a `needs review` check), *Auto release* creates the GitHub
+release and starts *Release* to publish it. To test the chain without publishing, run *Auto
+release* with `dry_run` ticked.
