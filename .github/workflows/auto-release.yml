@@ -1,0 +1,60 @@
+name: Auto release
+
+# Releases a new patch version when updated prices land on main. The weekly price job bumps the
+# version and dispatches this after auto-merging (its merge can't trigger `push` itself); a
+# price PR merged by a person triggers it through `push`.
+on:
+  push:
+    branches: [main]
+    paths: [src/costwatch/data/prices.json.gz]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Don't create the release; run the release workflow as a dry run
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: auto-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      DRY_RUN: ${{ inputs.dry_run || false }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@v7
+      - name: Work out the version
+        id: version
+        run: |
+          tag="v$(uv version --short)"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          if git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
+            echo "released=true" >> "$GITHUB_OUTPUT"
+            echo "$tag is already released"
+          fi
+      - name: Create the GitHub release
+        if: steps.version.outputs.released != 'true' && env.DRY_RUN != 'true'
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          awk -v v="## [${TAG#v}]" 'index($0, v) == 1 {f = 1; next} /^## \[/ {f = 0} f' \
+            CHANGELOG.md > "$RUNNER_TEMP/notes.md"
+          gh release create "$TAG" --target "$(git rev-parse HEAD)" --title "$TAG" \
+            --notes-file "$RUNNER_TEMP/notes.md"
+      - name: Publish to PyPI
+        if: steps.version.outputs.released != 'true' || env.DRY_RUN == 'true'
+        run: |
+          gh workflow run release.yml --ref main \
+            -f tag="${{ steps.version.outputs.tag }}" -f dry_run="$DRY_RUN"
+          echo "Started the Release workflow for ${{ steps.version.outputs.tag }} (dry run: $DRY_RUN)"

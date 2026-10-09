@@ -13,6 +13,7 @@ concurrency:
 permissions:
   contents: write
   pull-requests: write
+  actions: write  # to start the auto release after merging
 
 jobs:
   update:
@@ -41,14 +42,28 @@ jobs:
           set -e
           echo "safe=$([ "$status" -eq 0 ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
           cat "$RUNNER_TEMP/body.md" >> "$GITHUB_STEP_SUMMARY"
+      - name: Bump the patch version for a prices release
+        id: bump
+        run: |
+          if [ -z "$(git status --porcelain -- src/costwatch/data/prices.json.gz)" ]; then
+            echo "Prices unchanged"
+            exit 0
+          fi
+          uv version --bump patch
+          uv run python scripts/prepare_price_release.py
+          echo "version=$(uv version --short)" >> "$GITHUB_OUTPUT"
       # Opens a PR when prices changed, or updates the open one; does nothing if unchanged
       - uses: peter-evans/create-pull-request@v7
         id: pr
         with:
           branch: prices/update
-          add-paths: src/costwatch/data/prices.json.gz
-          commit-message: Update AWS prices
-          title: Update AWS prices
+          add-paths: |
+            src/costwatch/data/prices.json.gz
+            pyproject.toml
+            uv.lock
+            CHANGELOG.md
+          commit-message: Update AWS prices (${{ steps.bump.outputs.version }})
+          title: Update AWS prices (${{ steps.bump.outputs.version }})
           body-path: ${{ runner.temp }}/body.md
           author: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
           committer: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
@@ -58,7 +73,10 @@ jobs:
         if: steps.pr.outputs.pull-request-number && steps.compare.outputs.safe == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh pr merge "${{ steps.pr.outputs.pull-request-number }}" --squash --delete-branch
+        run: |
+          gh pr merge "${{ steps.pr.outputs.pull-request-number }}" --squash --delete-branch
+          # A merge made with GITHUB_TOKEN doesn't trigger other workflows, so start it directly
+          gh workflow run auto-release.yml --ref main
       - name: Leave for review
         if: steps.pr.outputs.pull-request-number && steps.compare.outputs.safe != 'true'
         env:
