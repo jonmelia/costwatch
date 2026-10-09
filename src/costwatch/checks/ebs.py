@@ -73,3 +73,36 @@ def old_snapshots(session: boto3.Session, region: str, config: ScanConfig) -> li
                 )
             )
     return findings
+
+
+def gp2_volumes(session: boto3.Session, region: str, config: ScanConfig) -> list[Finding]:
+    ec2 = client(session, "ec2", region)
+    findings = []
+    # Unattached gp2 volumes are already reported as waste in full
+    pages = ec2.get_paginator("describe_volumes").paginate(
+        Filters=[
+            {"Name": "volume-type", "Values": ["gp2"]},
+            {"Name": "status", "Values": ["in-use"]},
+        ]
+    )
+    for page in pages:
+        for vol in page["Volumes"]:
+            savings = pricing.gp2_to_gp3_monthly_savings(vol["Size"])
+            if savings <= 0:
+                continue
+            findings.append(
+                Finding(
+                    check="gp2-volume",
+                    region=region,
+                    resource_id=vol["VolumeId"],
+                    name=name_tag(vol.get("Tags")),
+                    tags=tag_dict(vol.get("Tags")),
+                    description=(
+                        f"{vol['Size']} GiB gp2 volume; gp3 with the same performance "
+                        "is cheaper (cost shown is the saving)"
+                    ),
+                    monthly_cost=savings,
+                    recommendation="Modify the volume type to gp3; no downtime needed.",
+                )
+            )
+    return findings

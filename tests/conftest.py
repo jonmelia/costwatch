@@ -50,3 +50,24 @@ def preexisting_snapshots(ec2):
     """moto seeds the account with snapshots behind its default AMIs; tests ignore those."""
     pages = ec2.get_paginator("describe_snapshots").paginate(OwnerIds=["self"])
     return {s["SnapshotId"] for page in pages for s in page["Snapshots"]}
+
+
+def put_daily(cloudwatch, namespace, metric, dimensions: dict, values, end):
+    """One datapoint per day, ending the day before `end`."""
+    cloudwatch.put_metric_data(
+        Namespace=namespace,
+        MetricData=[
+            {
+                "MetricName": metric,
+                "Dimensions": [{"Name": k, "Value": v} for k, v in dimensions.items()],
+                "Value": value,
+                "Timestamp": end - timedelta(days=i + 1),
+            }
+            for i, value in enumerate(values)
+        ],
+    )
+
+
+@pytest.fixture
+def cloudwatch(session):
+    return session.client("cloudwatch", region_name=REGION)

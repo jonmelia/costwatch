@@ -33,6 +33,12 @@ def build_parser() -> argparse.ArgumentParser:
     )
     scan_p.add_argument("--stopped-days", type=int, default=30)
     scan_p.add_argument(
+        "--idle-days",
+        type=int,
+        default=14,
+        help="Days of CloudWatch metrics the idle checks look at (default: 14)",
+    )
+    scan_p.add_argument(
         "--min-cost", type=float, default=0.0, help="Hide findings under this $/month"
     )
     scan_p.add_argument(
@@ -57,7 +63,11 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     console = Console(stderr=True)
-    config = ScanConfig(snapshot_age_days=args.snapshot_age_days, stopped_days=args.stopped_days)
+    config = ScanConfig(
+        snapshot_age_days=args.snapshot_age_days,
+        stopped_days=args.stopped_days,
+        idle_days=args.idle_days,
+    )
     try:
         session = boto3.Session(profile_name=args.profile)
         with console.status("Scanning AWS account..."):

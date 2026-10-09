@@ -20,7 +20,20 @@ OWNER_TAG_KEYS = ("owner", "createdby", "created-by", "created_by", "contact", "
 CREATE_EVENTS = {
     "unattached-ebs-volume": {"CreateVolume"},
     "old-ebs-snapshot": {"CreateSnapshot", "CreateSnapshots", "CopySnapshot"},
+    "gp2-volume": {"CreateVolume"},
     "unused-elastic-ip": {"AllocateAddress"},
+    "idle-ec2-instance": {"RunInstances"},
+    "unused-ami": {"CreateImage", "RegisterImage", "CopyImage"},
+    "idle-nat-gateway": {"CreateNatGateway"},
+    "log-group-no-retention": {"CreateLogGroup"},
+    "idle-rds-instance": {
+        "CreateDBInstance",
+        "CreateDBInstanceReadReplica",
+        "RestoreDBInstanceFromDBSnapshot",
+        "RestoreDBInstanceToPointInTime",
+    },
+    # Whoever deleted the instance left the backups behind
+    "retained-rds-backup": {"DeleteDBInstance"},
     "long-stopped-instance": {"RunInstances"},
     "idle-load-balancer": {"CreateLoadBalancer"},
     "old-rds-snapshot": {

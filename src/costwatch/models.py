@@ -6,6 +6,10 @@ from datetime import UTC, datetime
 class ScanConfig:
     snapshot_age_days: int = 90
     stopped_days: int = 30
+    # Idle checks look at this many days of CloudWatch metrics
+    idle_days: int = 14
+    idle_cpu_percent: float = 5.0
+    log_group_min_gib: float = 1.0
     # Overridable so tests can move the clock forward
     now: datetime = field(default_factory=lambda: datetime.now(UTC))
 

@@ -36,6 +36,13 @@ def seed(endpoint: str, region: str = DEFAULT_REGION) -> dict[str, str]:
     ami = ec2.describe_images(Owners=["amazon"])["Images"][0]["ImageId"]
     instance = ec2.run_instances(ImageId=ami, MinCount=1, MaxCount=1)["Instances"][0]["InstanceId"]
     ec2.stop_instances(InstanceIds=[instance])
+    gp2 = ec2.create_volume(AvailabilityZone=az, Size=200, VolumeType="gp2")["VolumeId"]
+    ec2.attach_volume(VolumeId=gp2, InstanceId=instance, Device="/dev/sdf")
+    unused_ami = ec2.register_image(
+        Name="old-golden-image",
+        RootDeviceName="/dev/xvda",
+        BlockDeviceMappings=[{"DeviceName": "/dev/xvda", "Ebs": {"VolumeSize": 30}}],
+    )["ImageId"]
 
     vpc = ec2.create_vpc(CidrBlock="10.0.0.0/16")["Vpc"]["VpcId"]
     subnets = [
@@ -60,6 +67,18 @@ def seed(endpoint: str, region: str = DEFAULT_REGION) -> dict[str, str]:
         MasterUserPassword="password123",
     )
     rds.create_db_snapshot(DBInstanceIdentifier="app-db", DBSnapshotIdentifier="app-db-manual")
+    rds.create_db_instance(
+        DBInstanceIdentifier="deleted-db",
+        DBInstanceClass="db.t3.micro",
+        Engine="postgres",
+        AllocatedStorage=20,
+        MasterUsername="admin",
+        MasterUserPassword="password123",
+        BackupRetentionPeriod=7,
+    )
+    rds.delete_db_instance(
+        DBInstanceIdentifier="deleted-db", SkipFinalSnapshot=True, DeleteAutomatedBackups=False
+    )
     rds.create_db_cluster(
         DBClusterIdentifier="app-cluster",
         Engine="aurora-postgresql",
@@ -74,6 +93,9 @@ def seed(endpoint: str, region: str = DEFAULT_REGION) -> dict[str, str]:
         "unattached-ebs-volume": volume,
         "old-ebs-snapshot": snapshot,
         "unused-elastic-ip": eip,
+        "gp2-volume": gp2,
+        "unused-ami": unused_ami,
+        "retained-rds-backup": "deleted-db",
         "long-stopped-instance": instance,
         "idle-load-balancer": alb["LoadBalancerArn"],
         "idle-classic-load-balancer": "idle-clb",

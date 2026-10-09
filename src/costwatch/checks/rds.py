@@ -4,6 +4,7 @@ import boto3
 
 from costwatch import pricing
 from costwatch.aws import client, tag_dict
+from costwatch.metrics import daily_values
 from costwatch.models import Finding, ScanConfig
 
 # Automated backups expire with the retention period; manual snapshots are kept until deleted.
@@ -69,6 +70,98 @@ def old_rds_cluster_snapshots(
                     ),
                     monthly_cost=pricing.rds_snapshot_monthly(size, aurora=aurora),
                     recommendation=_RECOMMENDATION,
+                )
+            )
+    return findings
+
+
+def idle_rds_instances(session: boto3.Session, region: str, config: ScanConfig) -> list[Finding]:
+    rds = client(session, "rds", region)
+    cutoff = config.now - timedelta(days=config.idle_days)
+    instances = [
+        db
+        for page in rds.get_paginator("describe_db_instances").paginate()
+        for db in page["DBInstances"]
+        if db.get("DBInstanceStatus") == "available"
+        and db.get("InstanceCreateTime")
+        and db["InstanceCreateTime"] <= cutoff
+    ]
+    if not instances:
+        return []
+
+    connections = daily_values(
+        client(session, "cloudwatch", region),
+        {
+            db["DBInstanceIdentifier"]: (
+                "AWS/RDS",
+                "DatabaseConnections",
+                {"DBInstanceIdentifier": db["DBInstanceIdentifier"]},
+            )
+            for db in instances
+        },
+        "Maximum",
+        config.idle_days,
+        config.now,
+    )
+
+    findings = []
+    for db in instances:
+        values = connections[db["DBInstanceIdentifier"]]
+        if not values or max(values) > 0:
+            continue
+        aurora = db["Engine"].startswith("aurora")
+        compute = pricing.rds_instance_monthly(db["DBInstanceClass"], db.get("MultiAZ", False))
+        # Aurora storage is billed per cluster, not per instance
+        storage = 0.0 if aurora else db.get("AllocatedStorage", 0) * pricing.RDS_STORAGE_GB_MONTH
+        price_note = "" if compute is not None else " (instance price not in table)"
+        findings.append(
+            Finding(
+                check="idle-rds-instance",
+                region=region,
+                resource_id=db["DBInstanceArn"],
+                name=db["DBInstanceIdentifier"],
+                tags=tag_dict(db.get("TagList")),
+                description=(
+                    f"{db['DBInstanceClass']} {db['Engine']} had no connections in "
+                    f"{config.idle_days} days{price_note}"
+                ),
+                monthly_cost=(compute or 0.0) + storage,
+                recommendation=(
+                    "Take a final snapshot and delete it, or stop it (RDS restarts stopped "
+                    "instances after 7 days)."
+                ),
+            )
+        )
+    return findings
+
+
+def retained_rds_backups(session: boto3.Session, region: str, config: ScanConfig) -> list[Finding]:
+    rds = client(session, "rds", region)
+    findings = []
+    paginator = rds.get_paginator("describe_db_instance_automated_backups")
+    for page in paginator.paginate():
+        for backup in page["DBInstanceAutomatedBackups"]:
+            if backup.get("Status") != "retained":
+                continue
+            size = backup.get("AllocatedStorage", 0)
+            identifier = backup["DBInstanceIdentifier"]
+            findings.append(
+                Finding(
+                    check="retained-rds-backup",
+                    region=region,
+                    resource_id=backup.get("DBInstanceAutomatedBackupsArn")
+                    or backup.get("DbiResourceId")
+                    or identifier,
+                    name=identifier,
+                    description=(
+                        f"{size} GiB of automated backups kept after instance {identifier} "
+                        "was deleted (kept until their retention period ends)"
+                    ),
+                    monthly_cost=pricing.rds_snapshot_monthly(size),
+                    recommendation=(
+                        "Delete the retained backups if you won't restore from them "
+                        "(take a manual snapshot first to keep one copy)."
+                    ),
                 )
             )
     return findings

@@ -46,6 +46,7 @@ costwatch scan --profile prod --region eu-west-1 --region us-east-1
 costwatch scan --owners                         # add who owns each resource
 costwatch scan --min-cost 5                     # hide findings under $5/month
 costwatch scan --snapshot-age-days 180 --stopped-days 60
+costwatch scan --idle-days 30                   # look at 30 days of CloudWatch metrics
 costwatch scan --json > findings.json           # machine-readable
 costwatch policy                                # IAM policy for a read-only role
 ```
@@ -59,14 +60,25 @@ the scan carries on.
 |---|---|---|
 | `unattached-ebs-volume` | EBS volumes not attached to an instance | Storage + provisioned IOPS/throughput |
 | `old-ebs-snapshot` | EBS snapshots older than 90 days that no AMI uses | Upper bound (snapshots are incremental) |
+| `gp2-volume` | Attached gp2 volumes | Saving from switching to gp3 at the same performance |
 | `unused-elastic-ip` | Elastic IPs not associated with anything | $0.005/hour |
 | `long-stopped-instance` | Instances stopped for 30+ days | Their attached EBS volumes |
+| `idle-ec2-instance` | Running instances whose CPU never went above 5% in 14 days | Linux on-demand instance price |
+| `unused-ami` | Your AMIs older than 90 days that no instance or launch template uses | Their snapshots (upper bound) |
 | `idle-load-balancer` | ALB/NLB/GWLB/Classic with no registered targets | Hourly load balancer charge |
+| `idle-nat-gateway` | NAT gateways that sent under 1 MiB in 14 days | $0.045/hour (plus any data) |
 | `old-rds-snapshot` | Manual RDS/Aurora snapshots older than 90 days | Upper bound: allocated size × backup rate |
+| `idle-rds-instance` | RDS instances with no connections in 14 days | Instance (× 2 for Multi-AZ) + storage |
+| `retained-rds-backup` | Automated backups kept after their instance was deleted | Upper bound: allocated size × backup rate |
+| `log-group-no-retention` | CloudWatch log groups over 1 GiB with no retention set | Current storage at $0.03/GB-month |
+
+The idle checks use CloudWatch metrics and are deliberately conservative: an instance only
+counts as idle if its CPU *never* went above 5%, and resources with no metric data are skipped.
 
 Prices are us-east-1 on-demand approximations ([`pricing.py`](src/costwatch/pricing.py)).
 They're for ranking waste, not for matching your bill to the cent; other regions are usually
-within about 20%.
+within about 20%. Instance types missing from the price table are still reported, with a note
+and a cost of $0.
 
 ## Owners (`--owners`)
 
