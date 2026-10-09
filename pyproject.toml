@@ -1,0 +1,36 @@
+[project]
+name = "costwatch"
+version = "0.1.0"
+description = "Find wasted AWS spend: idle and orphaned resources with estimated monthly cost"
+readme = "README.md"
+authors = [
+    { name = "jonnym", email = "26524200+jonmelia@users.noreply.github.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "boto3>=1.43.110",
+    "rich>=15.0.0",
+]
+
+[build-system]
+requires = ["uv_build>=0.12.24,<0.13.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "moto[ec2,elb,elbv2]>=5.2.3",
+    "pytest>=9.1.1",
+    "ruff>=0.16.10",
+]
+
+[project.scripts]
+costwatch = "costwatch.cli:main"
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
