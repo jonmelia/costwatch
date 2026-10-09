@@ -4,6 +4,7 @@ import boto3
 
 from costwatch import pricing
 from costwatch.aws import client, name_tag, tag_dict
+from costwatch.checks.ec2 import stopped_too_long
 from costwatch.fmt import ago
 from costwatch.models import Finding, ScanConfig
 
@@ -91,6 +92,8 @@ def old_snapshots(session: boto3.Session, region: str, config: ScanConfig) -> li
 
 def gp2_volumes(session: boto3.Session, region: str, config: ScanConfig) -> list[Finding]:
     ec2 = client(session, "ec2", region)
+    # Volumes of long-stopped instances are already counted in full by long-stopped-instance
+    stopped = {instance["InstanceId"] for instance, _ in stopped_too_long(ec2, config)}
     findings = []
     # Unattached gp2 volumes are already reported as waste in full
     pages = ec2.get_paginator("describe_volumes").paginate(
@@ -101,6 +104,8 @@ def gp2_volumes(session: boto3.Session, region: str, config: ScanConfig) -> list
     )
     for page in pages:
         for vol in page["Volumes"]:
+            if any(a.get("InstanceId") in stopped for a in vol.get("Attachments", [])):
+                continue
             savings = pricing.gp2_to_gp3_monthly_savings(region, vol["Size"])
             if savings <= 0:
                 continue

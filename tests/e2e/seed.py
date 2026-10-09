@@ -37,7 +37,8 @@ def seed(endpoint: str, region: str = DEFAULT_REGION) -> dict[str, str]:
     instance = ec2.run_instances(ImageId=ami, MinCount=1, MaxCount=1)["Instances"][0]["InstanceId"]
     ec2.stop_instances(InstanceIds=[instance])
     gp2 = ec2.create_volume(AvailabilityZone=az, Size=200, VolumeType="gp2")["VolumeId"]
-    ec2.attach_volume(VolumeId=gp2, InstanceId=instance, Device="/dev/sdf")
+    running = ec2.run_instances(ImageId=ami, MinCount=1, MaxCount=1)["Instances"][0]["InstanceId"]
+    ec2.attach_volume(VolumeId=gp2, InstanceId=running, Device="/dev/sdf")
     unused_ami = ec2.register_image(
         Name="old-golden-image",
         RootDeviceName="/dev/xvda",

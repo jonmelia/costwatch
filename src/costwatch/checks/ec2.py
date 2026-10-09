@@ -40,12 +40,9 @@ def _stopped_since(instance: dict) -> datetime | None:
     return datetime.strptime(match.group(1), "%Y-%m-%d %H:%M:%S").replace(tzinfo=UTC)
 
 
-def long_stopped_instances(
-    session: boto3.Session, region: str, config: ScanConfig
-) -> list[Finding]:
-    ec2 = client(session, "ec2", region)
+def stopped_too_long(ec2, config: ScanConfig) -> list[tuple[dict, datetime]]:
+    """(instance, stopped since) for instances stopped longer than config.stopped_days."""
     cutoff = config.now - timedelta(days=config.stopped_days)
-
     stopped = []
     pages = ec2.get_paginator("describe_instances").paginate(
         Filters=[{"Name": "instance-state-name", "Values": ["stopped"]}]
@@ -56,6 +53,14 @@ def long_stopped_instances(
                 since = _stopped_since(instance)
                 if since and since <= cutoff:
                     stopped.append((instance, since))
+    return stopped
+
+
+def long_stopped_instances(
+    session: boto3.Session, region: str, config: ScanConfig
+) -> list[Finding]:
+    ec2 = client(session, "ec2", region)
+    stopped = stopped_too_long(ec2, config)
     if not stopped:
         return []
 
