@@ -21,8 +21,11 @@ from pathlib import Path
 BASE = "https://pricing.us-east-1.amazonaws.com"
 OUTPUT = Path(__file__).parent.parent / "src" / "costwatch" / "data" / "prices.json.gz"
 REAL_REGION = re.compile(r"^[a-z]{2}(-gov)?-[a-z]+-\d$")
-# Usage types carry a region prefix outside us-east-1, e.g. EUW2-EBS:VolumeUsage.gp3
-REGION_PREFIX = re.compile(r"^[A-Z]{2,4}\d-")
+# Usage types carry a region prefix outside us-east-1, e.g. EUW2-EBS:VolumeUsage.gp3, or just
+# EU- for eu-west-1
+REGION_PREFIX = re.compile(r"^[A-Z]{2,4}\d?-")
+REQUIRED = ("snapshot_gb_month", "nat_gateway_hour", "rds_backup_gb_month", "logs_gb_month")
+MIN_INSTANCE_TYPES = 100
 
 RDS_ENGINES = {"PostgreSQL", "MySQL", "MariaDB", "Aurora PostgreSQL", "Aurora MySQL"}
 RDS_STORAGE = {
@@ -132,6 +135,21 @@ def region_prices(region: str, urls: dict[str, str]) -> dict:
     return p
 
 
+def validate(result: dict[str, dict]) -> list[str]:
+    """Every region must have the core prices, so a parsing slip can't ship bad data."""
+    problems = []
+    for region, p in sorted(result.items()):
+        problems += [f"{region}: no {key}" for key in REQUIRED if key not in p]
+        problems += [
+            f"{region}: no EBS {v} price" for v in ("gp2", "gp3") if v not in p["ebs_gb_month"]
+        ]
+        if len(p["ec2_hour"]) < MIN_INSTANCE_TYPES:
+            problems.append(f"{region}: only {len(p['ec2_hour'])} instance types")
+        if "PostgreSQL" not in p["rds_hour"]:
+            problems.append(f"{region}: no RDS PostgreSQL prices")
+    return problems
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("--region", action="append", help="Only these regions")
@@ -163,14 +181,9 @@ def main() -> int:
             result[region] = future.result()
             print(f"{region}: {len(result[region]['ec2_hour'])} instance types", file=sys.stderr)
 
-    missing = {
-        r: k
-        for r, p in result.items()
-        for k in ("snapshot_gb_month", "nat_gateway_hour")
-        if k not in p
-    }
-    if missing:
-        print(f"warning: missing prices {missing}", file=sys.stderr)
+    if problems := validate(result):
+        print("refusing to write incomplete prices:", *problems, sep="\n  ", file=sys.stderr)
+        return 1
 
     data = {
         "source": BASE + "/offers/v1.0/aws/index.json",
