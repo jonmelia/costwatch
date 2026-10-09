@@ -1,6 +1,7 @@
 # costwatch
 
 [![CI](https://github.com/jonmelia/costwatch/actions/workflows/ci.yml/badge.svg)](https://github.com/jonmelia/costwatch/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/costwatch.svg)](https://pypi.org/project/costwatch/)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 
 **Find wasted AWS spend, and who left it running.**
@@ -33,9 +34,11 @@ Total: ~$79.58/month (~$955/year) across 17 region(s)
 Requires Python 3.12+.
 
 ```bash
-uv tool install git+https://github.com/jonmelia/costwatch
+uv tool install costwatch
 # or
-pipx install git+https://github.com/jonmelia/costwatch
+pipx install costwatch
+# or run once without installing
+uvx costwatch scan
 ```
 
 ## Usage
