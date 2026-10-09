@@ -5,6 +5,13 @@ All notable changes to costwatch. The format follows
 [semantic versioning](https://semver.org/): the CLI options, exit codes, check IDs and JSON
 output (`schema_version`) are the public interface.
 
+## [1.0.1] - 2026-10-09
+
+### Fixed
+- `costwatch policy` was missing `elasticloadbalancing:DescribeTags`, so the
+  `idle-load-balancer` check failed with AccessDenied under a role built from it. A new test
+  records every AWS call a scan makes and fails if the policy doesn't allow it.
+
 ## [1.0.0] - 2026-10-09
 
 ### Added
@@ -44,5 +51,6 @@ output (`schema_version`) are the public interface.
 - `--owners`: owners from tags, then the CloudTrail creator.
 - `policy` command printing the read-only IAM policy.
 
+[1.0.1]: https://github.com/jonmelia/costwatch/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/jonmelia/costwatch/compare/v0.1.0...v1.0.0
 [0.1.0]: https://github.com/jonmelia/costwatch/releases/tag/v0.1.0
