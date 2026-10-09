@@ -7,6 +7,17 @@ authors = [
     { name = "jonnym", email = "26524200+jonmelia@users.noreply.github.com" }
 ]
 requires-python = ">=3.12"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+keywords = ["aws", "finops", "cost", "cloud", "waste", "devops"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: System Administrators",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Topic :: System :: Systems Administration",
+]
 dependencies = [
     "boto3>=1.43.110",
     "rich>=15.0.0",
@@ -22,6 +33,10 @@ dev = [
     "pytest>=9.1.1",
     "ruff>=0.16.10",
 ]
+
+[project.urls]
+Repository = "https://github.com/jonmelia/costwatch"
+Issues = "https://github.com/jonmelia/costwatch/issues"
 
 [project.scripts]
 costwatch = "costwatch.cli:main"
