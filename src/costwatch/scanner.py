@@ -19,6 +19,7 @@ class ScanResult:
     findings: list[Finding] = field(default_factory=list)
     errors: list[str] = field(default_factory=list)
     owners_checked: bool = False
+    iac_checked: bool = False
 
     @property
     def total_monthly_cost(self) -> float:

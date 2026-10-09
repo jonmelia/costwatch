@@ -350,7 +350,7 @@ dependencies = [
 
 [package.dev-dependencies]
 dev = [
-    { name = "moto", extra = ["server"] },
+    { name = "moto", extra = ["s3", "server"] },
     { name = "pytest" },
     { name = "ruff" },
 ]
@@ -363,7 +363,7 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "moto", extras = ["ec2", "elb", "elbv2", "rds", "server", "cloudwatch", "logs", "autoscaling"], specifier = ">=5.2.3" },
+    { name = "moto", extras = ["ec2", "elb", "elbv2", "rds", "server", "cloudwatch", "logs", "autoscaling", "s3"], specifier = ">=5.2.3" },
     { name = "pytest", specifier = ">=9.1.1" },
     { name = "ruff", specifier = ">=0.16.10" },
 ]
@@ -801,6 +801,10 @@ wheels = [
 ]
 
 [package.optional-dependencies]
+s3 = [
+    { name = "py-partiql-parser" },
+    { name = "pyyaml" },
+]
 server = [
     { name = "antlr4-python3-runtime" },
     { name = "aws-xray-sdk" },

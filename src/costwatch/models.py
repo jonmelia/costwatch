@@ -26,6 +26,9 @@ class Finding:
     tags: dict[str, str] = field(default_factory=dict)
     owner: str | None = None
     owner_source: str | None = None  # e.g. "tag:Owner", "cloudtrail"
+    managed_by: str | None = None  # "terraform", "cloudformation" or "unmanaged"
+    iac_address: str | None = None  # Terraform address or CloudFormation stack name
+    iac_source: str | None = None  # state file the address came from
 
     def to_dict(self) -> dict:
         return asdict(self)

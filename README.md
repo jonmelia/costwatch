@@ -47,6 +47,7 @@ uvx costwatch scan
 costwatch scan                                  # all enabled regions, default credentials / $AWS_PROFILE
 costwatch scan --profile prod --region eu-west-1 --region us-east-1
 costwatch scan --owners                         # add who owns each resource
+costwatch scan --tfstate s3://my-tf-state/      # mark findings managed by Terraform or not
 costwatch scan --min-cost 5                     # hide findings under $5/month
 costwatch scan --snapshot-age-days 180 --stopped-days 60
 costwatch scan --idle-days 30                   # look at 30 days of CloudWatch metrics
@@ -94,6 +95,30 @@ For each finding, costwatch looks for an owner in this order:
 CloudTrail event history only goes back 90 days, so older resources show as `unknown` unless
 they're tagged. Lookups are rate-limited by AWS (2 per second per region), so this is slower
 on accounts with lots of findings.
+
+## Terraform and CloudFormation (`--tfstate`)
+
+Pass your Terraform state and every finding is marked **terraform** (with its address),
+**cloudformation** (from the stack tag) or **unmanaged**:
+
+```bash
+costwatch scan --tfstate s3://my-tf-state/                 # every *.tfstate under the prefix, incl. workspaces
+costwatch scan --tfstate s3://my-tf-state/prod/network.tfstate
+costwatch scan --tfstate ./infra                           # every *.tfstate in a directory
+terraform state pull > app.tfstate && costwatch scan --tfstate app.tfstate   # any other backend
+```
+
+- **Unmanaged and idle** usually means someone created it by hand and forgot it: the safest
+  thing to clean up.
+- **Managed and idle**: the recommendation changes to removing it from the code (e.g.
+  `module.vpc.aws_nat_gateway.this["eu-west-1a"]`) and running `terraform apply`, because
+  deleting it directly would cause drift.
+
+Only managed resources count; `data` sources just read existing infrastructure. Volumes attached
+through `aws_instance` block devices are matched too. Reading state from S3 needs
+`s3:ListBucket` and `s3:GetObject` on the state bucket (plus `kms:Decrypt` if it's encrypted with
+a customer key). State files can contain secrets: costwatch only reads identifier attributes, in
+memory, and never prints anything else from them.
 
 ## Development
 

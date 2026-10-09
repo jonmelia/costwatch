@@ -6,6 +6,7 @@ from botocore.exceptions import BotoCoreError, ClientError, NoCredentialsError
 from rich.console import Console
 
 from costwatch import __version__, report
+from costwatch.iac import annotate, load_states
 from costwatch.iam import policy_json
 from costwatch.models import ScanConfig
 from costwatch.owners import resolve_owners
@@ -49,6 +50,16 @@ def build_parser() -> argparse.ArgumentParser:
             "(last 90 days only; slower)"
         ),
     )
+    scan_p.add_argument(
+        "--tfstate",
+        action="append",
+        metavar="LOCATION",
+        help=(
+            "Terraform state to compare against, marking findings as managed or unmanaged: "
+            "a .tfstate file, a directory, s3://bucket/key, or s3://bucket/prefix/ for every "
+            "state under it. Repeatable. For other backends: terraform state pull > x.tfstate"
+        ),
+    )
     scan_p.add_argument("--json", action="store_true", help="Output JSON instead of a table")
 
     sub.add_parser("policy", help="Print the IAM policy costwatch needs")
@@ -77,6 +88,12 @@ def main(argv: list[str] | None = None) -> int:
             with console.status("Looking up owners in CloudTrail..."):
                 result.errors.extend(resolve_owners(session, result.findings))
             result.owners_checked = True
+        if args.tfstate:
+            with console.status("Reading Terraform state..."):
+                index, state_errors = load_states(session, args.tfstate)
+            result.errors.extend(state_errors)
+            annotate(result.findings, index)
+            result.iac_checked = True
     except NoCredentialsError:
         console.print("[red]No AWS credentials found.[/red] Set AWS_PROFILE or pass --profile.")
         return 2
