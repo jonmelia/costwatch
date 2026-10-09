@@ -43,6 +43,16 @@ uv run pytest          # tests use moto, no real AWS calls
 uv run ruff check . && uv run ruff format .
 ```
 
+`tests/e2e/` runs the real `costwatch` command against a moto server over HTTP. To poke at it
+by hand with a fake account full of waste:
+
+```bash
+uv run moto_server -p 5000
+uv run python -m tests.e2e.seed --endpoint http://localhost:5000
+AWS_ENDPOINT_URL=http://localhost:5000 AWS_ACCESS_KEY_ID=testing AWS_SECRET_ACCESS_KEY=testing \
+  uv run costwatch scan --region eu-west-1 --snapshot-age-days 0 --stopped-days 0 --min-cost 1
+```
+
 To add a check, write a function `(session, region, config) -> list[Finding]` in
 `src/costwatch/checks/`, add it to `ALL_CHECKS`, add its permissions to `iam.py`, and test it
 with moto.
