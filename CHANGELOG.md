@@ -5,6 +5,17 @@ All notable changes to costwatch. The format follows
 [semantic versioning](https://semver.org/): the CLI options, exit codes, check IDs and JSON
 output (`schema_version`) are the public interface.
 
+## [1.0.3] - 2026-10-15
+
+### Fixed
+- Profiles that sign in with `aws login` failed with "Missing Dependency: Using the login
+  credential provider requires an additional dependency". costwatch now installs
+  `boto3[crt]`, so these profiles work with `--profile` like any other.
+
+### Changed
+- Updated all dependencies to their latest releases (boto3/botocore 1.43.114, moto 5.2.4,
+  ruff 0.17.1 and others).
+
 ## [1.0.2] - 2026-10-12
 
 ### Changed
@@ -56,6 +67,7 @@ output (`schema_version`) are the public interface.
 - `--owners`: owners from tags, then the CloudTrail creator.
 - `policy` command printing the read-only IAM policy.
 
+[1.0.3]: https://github.com/jonmelia/costwatch/compare/v1.0.2...v1.0.3
 [1.0.2]: https://github.com/jonmelia/costwatch/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/jonmelia/costwatch/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/jonmelia/costwatch/compare/v0.1.0...v1.0.0
