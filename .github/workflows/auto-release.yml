@@ -1,12 +1,13 @@
 name: Auto release
 
-# Releases a new patch version when updated prices land on main. The weekly price job bumps the
-# version and dispatches this after auto-merging (its merge can't trigger `push` itself); a
-# price PR merged by a person triggers it through `push`.
+# Releases whenever a new version lands on main: a version bump in pyproject.toml, or updated
+# prices (the weekly price job bumps the version). Pushes that don't change the version find its
+# tag already exists and do nothing. The price job dispatches this after auto-merging (its merge
+# can't trigger `push` itself); anything merged by a person triggers it through `push`.
 on:
   push:
     branches: [main]
-    paths: [src/costwatch/data/prices.json.gz]
+    paths: [pyproject.toml, src/costwatch/data/prices.json.gz]
   workflow_dispatch:
     inputs:
       dry_run:
@@ -50,6 +51,10 @@ jobs:
         run: |
           awk -v v="## [${TAG#v}]" 'index($0, v) == 1 {f = 1; next} /^## \[/ {f = 0} f' \
             CHANGELOG.md > "$RUNNER_TEMP/notes.md"
+          if ! grep -q '[^[:space:]]' "$RUNNER_TEMP/notes.md"; then
+            echo "CHANGELOG.md has no entry for ${TAG#v}; add one before releasing" >&2
+            exit 1
+          fi
           gh release create "$TAG" --target "$(git rev-parse HEAD)" --title "$TAG" \
             --notes-file "$RUNNER_TEMP/notes.md"
       - name: Publish to PyPI
