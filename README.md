@@ -206,6 +206,11 @@ AWS_ENDPOINT_URL=http://localhost:5000 \
 See [CONTRIBUTING.md](CONTRIBUTING.md) for adding a check, and [CHANGELOG.md](CHANGELOG.md) for
 what's changed.
 
+## Who's behind it
+
+costwatch is built and maintained by [Cloud Adept](https://cloudadept.io), an AWS and DevOps
+consultancy. If you'd like help acting on what it finds, [get in touch](https://cloudadept.io/contact.html).
+
 ## License
 
 [Apache 2.0](LICENSE)
