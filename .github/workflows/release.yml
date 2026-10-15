@@ -13,6 +13,10 @@ on:
         description: Build and check everything, but don't publish to PyPI
         type: boolean
         default: false
+      ref:
+        description: Commit to build instead of the tag (for dry runs of a version not tagged yet)
+        required: false
+        default: ""
 
 jobs:
   build:
@@ -24,7 +28,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ inputs.tag || github.ref }}
+          ref: ${{ inputs.ref || inputs.tag || github.ref }}
       - uses: astral-sh/setup-uv@v7
       - name: Check the tag matches the package version
         run: |
