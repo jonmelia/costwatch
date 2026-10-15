@@ -60,6 +60,11 @@ jobs:
       - name: Publish to PyPI
         if: steps.version.outputs.released != 'true' || env.DRY_RUN == 'true'
         run: |
+          # A dry run of an unreleased version has no tag yet, so build the exact commit instead
+          ref=""
+          if [ "$DRY_RUN" = "true" ] && [ "${{ steps.version.outputs.released }}" != "true" ]; then
+            ref="$(git rev-parse HEAD)"
+          fi
           gh workflow run release.yml --ref main \
-            -f tag="${{ steps.version.outputs.tag }}" -f dry_run="$DRY_RUN"
+            -f tag="${{ steps.version.outputs.tag }}" -f dry_run="$DRY_RUN" -f ref="$ref"
           echo "Started the Release workflow for ${{ steps.version.outputs.tag }} (dry run: $DRY_RUN)"
