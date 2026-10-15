@@ -1,6 +1,6 @@
 [project]
 name = "costwatch"
-version = "1.0.2"
+version = "1.0.3"
 description = "Find wasted AWS spend: idle and orphaned resources with estimated monthly cost"
 readme = "README.md"
 authors = [
@@ -23,7 +23,7 @@ classifiers = [
     "Topic :: System :: Systems Administration",
 ]
 dependencies = [
-    "boto3>=1.43.110",
+    "boto3[crt]>=1.43.110",
     "rich>=15.0.0",
 ]
 
