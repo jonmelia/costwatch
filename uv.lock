@@ -451,7 +451,7 @@ wheels = [
 
 [[package]]
 name = "costwatch"
-version = "1.0.3"
+version = "1.0.4"
 source = { editable = "." }
 dependencies = [
     { name = "boto3", extra = ["crt"] },
