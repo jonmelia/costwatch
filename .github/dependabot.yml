@@ -1,13 +1,7 @@
+# Keeps the pinned GitHub Actions up to date: each update arrives as a pull request to review
 version: 2
 updates:
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: monthly
-  - package-ecosystem: uv
-    directory: /
-    schedule:
-      interval: monthly
-    groups:
-      dev:
-        dependency-type: development
