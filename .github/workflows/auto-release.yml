@@ -2,8 +2,8 @@ name: Auto release
 
 # Releases whenever a new version lands on main: a version bump in pyproject.toml, or updated
 # prices (the weekly price job bumps the version). Pushes that don't change the version find its
-# tag already exists and do nothing. The price job dispatches this after auto-merging (its merge
-# can't trigger `push` itself); anything merged by a person triggers it through `push`.
+# tag already exists and do nothing. The price job's merges trigger it through `push` too, since
+# they're made with its GitHub App token rather than GITHUB_TOKEN.
 on:
   push:
     branches: [main]
