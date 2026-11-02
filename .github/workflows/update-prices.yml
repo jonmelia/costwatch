@@ -96,7 +96,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh run watch "${{ steps.ci.outputs.run-id }}" --exit-status --interval 30 > /dev/null
-          gh pr merge "${{ steps.pr.outputs.pull-request-number }}" --squash --delete-branch
+          # Only ever merge the commit this job made and tested, never anything pushed since
+          gh pr merge "${{ steps.pr.outputs.pull-request-number }}" --squash --delete-branch \
+            --match-head-commit "${{ steps.pr.outputs.pull-request-head-sha }}"
           # A merge made with GITHUB_TOKEN doesn't trigger other workflows, so start it directly
           gh workflow run auto-release.yml --ref main
       - name: Leave for review
