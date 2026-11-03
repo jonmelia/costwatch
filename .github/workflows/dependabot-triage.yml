@@ -1,0 +1,54 @@
+name: Dependabot triage
+
+# Keeps one open "Dependabot triage" issue listing the Dependabot pull requests that need a person:
+# majors left for review, anything with failing checks, and anything open more than a week. The
+# issue closes itself once the list is empty, so nothing sits unnoticed.
+on:
+  schedule:
+    - cron: "0 7 * * 1"  # weekly, Mondays 07:00 UTC
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  pull-requests: read
+
+jobs:
+  triage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      TITLE: Dependabot triage
+    steps:
+      - name: List pull requests that need a person
+        run: |
+          # shellcheck disable=SC2016  # the single-quoted $why is jq, not shell
+          CUTOFF=$(date -u -d '7 days ago' +%Y-%m-%dT%H:%M:%SZ) \
+          gh pr list --author app/dependabot --state open --limit 100 \
+            --json number,title,url,createdAt,labels,statusCheckRollup \
+            --jq '.[]
+              | (if any(.labels[]; .name == "needs review") then "major update"
+                 elif any(.statusCheckRollup[]; .conclusion == "FAILURE") then "failing checks"
+                 elif .createdAt < env.CUTOFF then "open over a week"
+                 else empty end) as $why
+              | "- [ ] \(.url) \(.title) (\($why))"' > "$RUNNER_TEMP/list.md"
+          cat "$RUNNER_TEMP/list.md" >> "$GITHUB_STEP_SUMMARY"
+      - name: Update the triage issue
+        run: |
+          issue=$(gh issue list --state open --search "in:title \"$TITLE\"" --json number --jq '.[0].number // empty')
+          if [ ! -s "$RUNNER_TEMP/list.md" ]; then
+            [ -n "$issue" ] && gh issue close "$issue" --comment "Nothing waiting on a person."
+            exit 0
+          fi
+          {
+            echo "Dependabot pull requests that won't merge on their own. Review majors, fix or"
+            echo "close failures. Updated weekly by the *Dependabot triage* workflow."
+            echo
+            cat "$RUNNER_TEMP/list.md"
+          } > "$RUNNER_TEMP/body.md"
+          if [ -n "$issue" ]; then
+            gh issue edit "$issue" --body-file "$RUNNER_TEMP/body.md"
+          else
+            gh issue create --title "$TITLE" --label dependencies --body-file "$RUNNER_TEMP/body.md"
+          fi

@@ -1,13 +1,27 @@
 version: 2
+# Patch and minor updates merge automatically once CI passes (see workflows/dependabot-automerge.yml),
+# so they're grouped into one pull request per ecosystem and only offered once a release has been
+# out a few days. Majors come one per pull request and wait for review.
 updates:
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: monthly
+    cooldown:
+      default-days: 3
+    groups:
+      actions:
+        update-types: [minor, patch]
   - package-ecosystem: uv
     directory: /
     schedule:
       interval: monthly
+    cooldown:
+      default-days: 3
     groups:
       dev:
         dependency-type: development
+        update-types: [minor, patch]
+      runtime:
+        dependency-type: production
+        update-types: [minor, patch]
