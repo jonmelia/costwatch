@@ -2,7 +2,8 @@ name: Dependabot auto-merge
 
 # Patch and minor updates merge on their own once the required checks pass; majors get a
 # `needs review` label and wait for a person, as do minor bumps of 0.x packages, since semver lets
-# those break things too. Set the repository variable DEPENDABOT_AUTOMERGE to
+# those break things too, and GitHub Actions updates, which change workflow files and so are
+# reviewed by a person. Set the repository variable DEPENDABOT_AUTOMERGE to
 # `off` to pause this (during a release freeze, say) without editing any config.
 #
 # pull_request_target so the job can read the costwatch-prices GitHub App secrets (runs started by
@@ -34,10 +35,12 @@ jobs:
         env:
           UPDATE_TYPE: ${{ steps.meta.outputs.update-type }}
           DEPS: ${{ steps.meta.outputs.updated-dependencies-json }}
+          ECOSYSTEM: ${{ steps.meta.outputs.package-ecosystem }}
         run: |
           zerover_minor=$(jq '[.[] | select(.updateType == "version-update:semver-minor"
             and (.prevVersion // "" | startswith("0.")))] | length > 0' <<< "$DEPS")
-          if [ "$UPDATE_TYPE" = version-update:semver-major ] || [ "$zerover_minor" = true ]; then
+          if [ "$UPDATE_TYPE" = version-update:semver-major ] || [ "$zerover_minor" = true ] \
+            || [ "$ECOSYSTEM" = github_actions ]; then
             echo "needed=true" >> "$GITHUB_OUTPUT"
           else
             echo "needed=false" >> "$GITHUB_OUTPUT"
