@@ -50,7 +50,8 @@ add a price, extend the script and `pricing.py`, and keep a us-east-1 default in
 Dependabot checks monthly and groups patch and minor updates into one pull request per ecosystem,
 offered once a release has been out three days. *Dependabot auto-merge* sets those to merge as
 soon as the required CI checks pass; a failing check stops the merge. Major updates arrive one
-per pull request with a `needs review` label. Every Monday *Dependabot triage* updates a
+per pull request with a `needs review` label, and minor bumps of 0.x packages get the same label
+instead of merging, since those can break things too. Every Monday *Dependabot triage* updates a
 "Dependabot triage" issue that lists majors, failing updates and anything open more than a
 week, and closes the issue when the list is empty. To pause auto-merge (during a release freeze,
 say), set the repository variable `DEPENDABOT_AUTOMERGE` to `off`.

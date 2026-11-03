@@ -1,7 +1,8 @@
 name: Dependabot auto-merge
 
 # Patch and minor updates merge on their own once the required checks pass; majors get a
-# `needs review` label and wait for a person. Set the repository variable DEPENDABOT_AUTOMERGE to
+# `needs review` label and wait for a person, as do minor bumps of 0.x packages, since semver lets
+# those break things too. Set the repository variable DEPENDABOT_AUTOMERGE to
 # `off` to pause this (during a release freeze, say) without editing any config.
 #
 # pull_request_target so the job can read the costwatch-prices GitHub App secrets (runs started by
@@ -28,16 +29,29 @@ jobs:
         with:
           client-id: ${{ vars.PRICES_APP_CLIENT_ID }}
           private-key: ${{ secrets.PRICES_APP_PRIVATE_KEY }}
+      - name: Decide whether a person should look
+        id: review
+        env:
+          UPDATE_TYPE: ${{ steps.meta.outputs.update-type }}
+          DEPS: ${{ steps.meta.outputs.updated-dependencies-json }}
+        run: |
+          zerover_minor=$(jq '[.[] | select(.updateType == "version-update:semver-minor"
+            and (.prevVersion // "" | startswith("0.")))] | length > 0' <<< "$DEPS")
+          if [ "$UPDATE_TYPE" = version-update:semver-major ] || [ "$zerover_minor" = true ]; then
+            echo "needed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "needed=false" >> "$GITHUB_OUTPUT"
+          fi
       # Branch protection's required checks are the safety net: auto-merge only completes once
       # they pass, and never if they fail
       - name: Merge once checks pass
-        if: steps.meta.outputs.update-type != 'version-update:semver-major'
+        if: steps.review.outputs.needed == 'false'
         env:
           GH_TOKEN: ${{ steps.app.outputs.token }}
           PR: ${{ github.event.pull_request.html_url }}
         run: gh pr merge "$PR" --auto --squash --delete-branch
-      - name: Leave majors for review
-        if: steps.meta.outputs.update-type == 'version-update:semver-major'
+      - name: Leave for review
+        if: steps.review.outputs.needed == 'true'
         env:
           GH_TOKEN: ${{ steps.app.outputs.token }}
           PR: ${{ github.event.pull_request.html_url }}
