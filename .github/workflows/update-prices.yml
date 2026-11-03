@@ -10,10 +10,10 @@ concurrency:
   group: update-prices
   cancel-in-progress: false
 
+# The PR is opened and merged with a token for the costwatch-prices GitHub App instead: CI doesn't
+# run on a PR opened with GITHUB_TOKEN, and a merge made with it doesn't start the auto release
 permissions:
-  contents: write
-  pull-requests: write
-  actions: write  # to start the auto release after merging
+  contents: read
 
 jobs:
   update:
@@ -26,7 +26,7 @@ jobs:
       - name: Keep last week's prices for comparison
         run: cp src/costwatch/data/prices.json.gz "$RUNNER_TEMP/old-prices.json.gz"
       - run: uv run python scripts/update_prices.py --workers 8
-      # PRs opened with GITHUB_TOKEN don't trigger CI, so test here
+      # Test before opening a PR, so broken prices never reach one
       - run: uv run pytest -q
       - name: Compare with last week
         id: compare
@@ -52,10 +52,16 @@ jobs:
           uv version --bump patch
           uv run python scripts/prepare_price_release.py
           echo "version=$(uv version --short)" >> "$GITHUB_OUTPUT"
+      - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        id: app
+        with:
+          client-id: ${{ vars.PRICES_APP_CLIENT_ID }}
+          private-key: ${{ secrets.PRICES_APP_PRIVATE_KEY }}
       # Opens a PR when prices changed, or updates the open one; does nothing if unchanged
       - uses: peter-evans/create-pull-request@22a9089034f40e5a961c8808d113e2c98fb63676 # v7.0.11
         id: pr
         with:
+          token: ${{ steps.app.outputs.token }}
           branch: prices/update
           add-paths: |
             src/costwatch/data/prices.json.gz
@@ -68,43 +74,26 @@ jobs:
           author: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
           committer: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
           delete-branch: true
-      # main requires CI's checks, but a PR opened with GITHUB_TOKEN doesn't start CI, so start
-      # it on the PR's commit directly; its checks count for the PR all the same
-      - name: Run CI on the PR
-        id: ci
-        if: steps.pr.outputs.pull-request-number
-        env:
-          GH_TOKEN: ${{ github.token }}
-          SHA: ${{ steps.pr.outputs.pull-request-head-sha }}
-        run: |
-          gh workflow run ci.yml --ref prices/update
-          for _ in $(seq 30); do
-            run_id=$(gh run list --workflow ci.yml --event workflow_dispatch --commit "$SHA" \
-              --limit 1 --json databaseId --jq '.[0].databaseId // empty')
-            [ -n "$run_id" ] && break
-            sleep 10
-          done
-          if [ -z "$run_id" ]; then
-            echo "The CI run for $SHA didn't start" >&2
-            exit 1
-          fi
-          echo "run-id=$run_id" >> "$GITHUB_OUTPUT"
       # Tests passed above and prices moved normally: merge once CI passes, without waiting for a person
       - name: Merge automatically
         if: steps.pr.outputs.pull-request-number && steps.compare.outputs.safe == 'true'
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+          PR: ${{ steps.pr.outputs.pull-request-number }}
         run: |
-          gh run watch "${{ steps.ci.outputs.run-id }}" --exit-status --interval 30 > /dev/null
+          # CI takes a moment to report its checks on the new commit
+          for _ in $(seq 30); do
+            [ "$(gh pr checks "$PR" --required --json name --jq length 2>/dev/null || echo 0)" -gt 0 ] && break
+            sleep 10
+          done
+          gh pr checks "$PR" --required --watch --fail-fast --interval 30
           # Only ever merge the commit this job made and tested, never anything pushed since
-          gh pr merge "${{ steps.pr.outputs.pull-request-number }}" --squash --delete-branch \
+          gh pr merge "$PR" --squash --delete-branch \
             --match-head-commit "${{ steps.pr.outputs.pull-request-head-sha }}"
-          # A merge made with GITHUB_TOKEN doesn't trigger other workflows, so start it directly
-          gh workflow run auto-release.yml --ref main
       - name: Leave for review
         if: steps.pr.outputs.pull-request-number && steps.compare.outputs.safe != 'true'
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ steps.app.outputs.token }}
         run: |
           gh label create "needs review" --color D93F0B --force \
             --description "Unusual price changes; check before merging"
