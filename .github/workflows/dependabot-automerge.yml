@@ -1,0 +1,47 @@
+name: Dependabot auto-merge
+
+# Patch and minor updates merge on their own once the required checks pass; majors get a
+# `needs review` label and wait for a person. Set the repository variable DEPENDABOT_AUTOMERGE to
+# `off` to pause this (during a release freeze, say) without editing any config.
+#
+# pull_request_target so the job can read the costwatch-prices GitHub App secrets (runs started by
+# Dependabot on `pull_request` only see Dependabot secrets). It never checks out or runs the pull
+# request's code: it only reads Dependabot's metadata and calls the API. The merge is made with the
+# App token rather than GITHUB_TOKEN so the push to main starts CI and Auto release.
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize]
+
+permissions:
+  contents: read
+
+jobs:
+  automerge:
+    if: github.event.pull_request.user.login == 'dependabot[bot]' && vars.DEPENDABOT_AUTOMERGE != 'off'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98 # v3.1.0
+        id: meta
+      - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        id: app
+        with:
+          client-id: ${{ vars.PRICES_APP_CLIENT_ID }}
+          private-key: ${{ secrets.PRICES_APP_PRIVATE_KEY }}
+      # Branch protection's required checks are the safety net: auto-merge only completes once
+      # they pass, and never if they fail
+      - name: Merge once checks pass
+        if: steps.meta.outputs.update-type != 'version-update:semver-major'
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+          PR: ${{ github.event.pull_request.html_url }}
+        run: gh pr merge "$PR" --auto --squash --delete-branch
+      - name: Leave majors for review
+        if: steps.meta.outputs.update-type == 'version-update:semver-major'
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+          PR: ${{ github.event.pull_request.html_url }}
+        run: |
+          gh label create "needs review" --color D93F0B --force \
+            --description "Unusual price changes or a major dependency update; check before merging"
+          gh pr edit "$PR" --add-label "needs review"
