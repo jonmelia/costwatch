@@ -1,6 +1,6 @@
 [project]
 name = "costwatch"
-version = "1.0.5"
+version = "1.1.0"
 description = "Find wasted AWS spend: idle and orphaned resources with estimated monthly cost"
 readme = "README.md"
 authors = [
