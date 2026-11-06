@@ -42,6 +42,12 @@ CREATE_EVENTS = {
         "CopyDBSnapshot",
         "CopyDBClusterSnapshot",
     },
+    "orphaned-rds-snapshot": {
+        "CreateDBSnapshot",
+        "CreateDBClusterSnapshot",
+        "CopyDBSnapshot",
+        "CopyDBClusterSnapshot",
+    },
 }
 
 _RETRY_CONFIG = Config(retries={"mode": "adaptive", "max_attempts": 10})
