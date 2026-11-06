@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+from costwatch.checks.backup import orphaned_backups
 from costwatch.checks.ebs import gp2_volumes, old_snapshots, unattached_volumes
 from costwatch.checks.ec2 import (
     idle_instances,
@@ -14,6 +15,7 @@ from costwatch.checks.rds import (
     idle_rds_instances,
     old_rds_cluster_snapshots,
     old_rds_snapshots,
+    recent_orphaned_rds_snapshots,
     retained_rds_backups,
 )
 
@@ -73,6 +75,16 @@ CHECKS = [
         "retained-rds-backup",
         "Automated RDS backups kept after their instance was deleted",
         (retained_rds_backups,),
+    ),
+    CheckSpec(
+        "orphaned-rds-snapshot",
+        "Newer manual RDS/Aurora snapshots whose database has been deleted",
+        (recent_orphaned_rds_snapshots,),
+    ),
+    CheckSpec(
+        "orphaned-backup",
+        "AWS Backup recovery points whose RDS, Aurora or EBS source has been deleted",
+        (orphaned_backups,),
     ),
     CheckSpec(
         "log-group-no-retention",

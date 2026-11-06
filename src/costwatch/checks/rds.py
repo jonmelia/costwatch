@@ -144,6 +144,70 @@ def idle_rds_instances(session: boto3.Session, region: str, config: ScanConfig) 
     return findings
 
 
+def recent_orphaned_rds_snapshots(
+    session: boto3.Session, region: str, config: ScanConfig
+) -> list[Finding]:
+    """Manual snapshots too young for old-rds-snapshot, whose database has gone: a final snapshot
+    is billed from the day it's made, and nothing else in the account points at it."""
+    rds = client(session, "rds", region)
+    cutoff = config.now - timedelta(days=config.snapshot_age_days)
+    instances = {
+        i["DBInstanceIdentifier"]
+        for page in rds.get_paginator("describe_db_instances").paginate()
+        for i in page["DBInstances"]
+    }
+    clusters = {
+        c["DBClusterIdentifier"]
+        for page in rds.get_paginator("describe_db_clusters").paginate()
+        for c in page["DBClusters"]
+    }
+    findings = []
+
+    def recent(snap: dict) -> bool:
+        created = snap.get("SnapshotCreateTime")
+        return snap.get("Status") == "available" and created is not None and created > cutoff
+
+    def add(snap: dict, arn: str, name: str, what: str, source: str, aurora: bool = False) -> None:
+        size = snap.get("AllocatedStorage", 0)
+        findings.append(
+            Finding(
+                check="orphaned-rds-snapshot",
+                region=region,
+                resource_id=snap[arn],
+                name=snap[name],
+                tags=tag_dict(snap.get("TagList")),
+                description=(
+                    f"{size} GiB manual snapshot of deleted {what} {source}, "
+                    f"{(config.now - snap['SnapshotCreateTime']).days} days old "
+                    "(cost is an upper bound)"
+                ),
+                monthly_cost=pricing.rds_snapshot_monthly(region, size, aurora=aurora),
+                recommendation=_RECOMMENDATION,
+            )
+        )
+
+    for page in rds.get_paginator("describe_db_snapshots").paginate(SnapshotType="manual"):
+        for snap in page["DBSnapshots"]:
+            source = snap["DBInstanceIdentifier"]
+            if recent(snap) and source not in instances:
+                add(snap, "DBSnapshotArn", "DBSnapshotIdentifier", "instance", source)
+    pages = rds.get_paginator("describe_db_cluster_snapshots").paginate(SnapshotType="manual")
+    for page in pages:
+        for snap in page["DBClusterSnapshots"]:
+            source = snap["DBClusterIdentifier"]
+            if recent(snap) and source not in clusters:
+                aurora = snap.get("Engine", "").startswith("aurora")
+                add(
+                    snap,
+                    "DBClusterSnapshotArn",
+                    "DBClusterSnapshotIdentifier",
+                    "cluster",
+                    source,
+                    aurora=aurora,
+                )
+    return findings
+
+
 def retained_rds_backups(session: boto3.Session, region: str, config: ScanConfig) -> list[Finding]:
     rds = client(session, "rds", region)
     findings = []

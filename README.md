@@ -70,6 +70,8 @@ costwatch policy                                # IAM policy for a read-only rol
 | `old-rds-snapshot` | Manual RDS/Aurora snapshots older than 90 days | Backup storage (upper bound) |
 | `idle-rds-instance` | RDS instances with no connections in 14 days | Instance (by engine, class, Multi-AZ) + storage |
 | `retained-rds-backup` | Automated backups kept after their instance was deleted | Backup storage (upper bound) |
+| `orphaned-rds-snapshot` | Newer manual RDS/Aurora snapshots whose database has been deleted | Backup storage (upper bound) |
+| `orphaned-backup` | AWS Backup recovery points whose RDS, Aurora or EBS source has been deleted | One full copy (estimate) |
 | `log-group-no-retention` | CloudWatch log groups over 1 GiB with no retention set | Current log storage |
 
 The idle checks use CloudWatch metrics and are deliberately conservative: an instance only counts
