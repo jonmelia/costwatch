@@ -45,6 +45,11 @@ TERRAFORM_TYPES = {
     "idle-load-balancer": {"aws_lb", "aws_alb", "aws_elb"},
     "idle-nat-gateway": {"aws_nat_gateway"},
     "old-rds-snapshot": {"aws_db_snapshot", "aws_db_snapshot_copy", "aws_db_cluster_snapshot"},
+    "orphaned-rds-snapshot": {
+        "aws_db_snapshot",
+        "aws_db_snapshot_copy",
+        "aws_db_cluster_snapshot",
+    },
     "idle-rds-instance": {"aws_db_instance", "aws_rds_cluster_instance"},
     "log-group-no-retention": {"aws_cloudwatch_log_group"},
 }

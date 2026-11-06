@@ -5,6 +5,15 @@ All notable changes to costwatch. The format follows
 [semantic versioning](https://semver.org/): the CLI options, exit codes, check IDs and JSON
 output (`schema_version`) are the public interface.
 
+## [Unreleased]
+
+### Added
+- `orphaned-rds-snapshot`: newer manual RDS and Aurora snapshots whose database has been deleted.
+  `old-rds-snapshot` only flags them after `--snapshot-age-days`, but they're billed from day one.
+- `orphaned-backup`: AWS Backup recovery points whose RDS, Aurora or EBS source has been deleted.
+  Needs `backup:ListBackupVaults`, `backup:ListRecoveryPointsByBackupVault` and
+  `rds:DescribeDBClusters`; `costwatch policy` prints them.
+
 ## [1.0.5] - 2026-11-02
 
 ### Changed
