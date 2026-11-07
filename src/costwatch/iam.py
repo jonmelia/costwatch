@@ -34,6 +34,8 @@ POLICY = {
                 "cloudwatch:GetMetricData",
                 "logs:DescribeLogGroups",
                 "cloudtrail:LookupEvents",
+                "cloudtrail:DescribeTrails",
+                "ce:GetCostAndUsage",
             ],
             "Resource": "*",
         }
