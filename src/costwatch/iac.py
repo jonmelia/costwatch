@@ -44,6 +44,7 @@ TERRAFORM_TYPES = {
     "unused-ami": {"aws_ami", "aws_ami_copy", "aws_ami_from_instance"},
     "idle-load-balancer": {"aws_lb", "aws_alb", "aws_elb"},
     "idle-nat-gateway": {"aws_nat_gateway"},
+    "duplicate-trail": {"aws_cloudtrail"},
     "old-rds-snapshot": {"aws_db_snapshot", "aws_db_snapshot_copy", "aws_db_cluster_snapshot"},
     "orphaned-rds-snapshot": {
         "aws_db_snapshot",

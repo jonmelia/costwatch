@@ -18,6 +18,7 @@ from costwatch.checks.rds import (
     recent_orphaned_rds_snapshots,
     retained_rds_backups,
 )
+from costwatch.checks.trail import duplicate_trails
 
 
 @dataclass(frozen=True)
@@ -85,6 +86,11 @@ CHECKS = [
         "orphaned-backup",
         "AWS Backup recovery points whose RDS, Aurora or EBS source has been deleted",
         (orphaned_backups,),
+    ),
+    CheckSpec(
+        "duplicate-trail",
+        "Extra CloudTrail trails the bill charges for, priced from the bill",
+        (duplicate_trails,),
     ),
     CheckSpec(
         "log-group-no-retention",
