@@ -72,6 +72,7 @@ costwatch policy                                # IAM policy for a read-only rol
 | `retained-rds-backup` | Automated backups kept after their instance was deleted | Backup storage (upper bound) |
 | `orphaned-rds-snapshot` | Newer manual RDS/Aurora snapshots whose database has been deleted | Backup storage (upper bound) |
 | `orphaned-backup` | AWS Backup recovery points whose RDS, Aurora or EBS source has been deleted | One full copy (estimate) |
+| `duplicate-trail` | Extra CloudTrail trails the bill charges for | What the bill charged in the last 30 days |
 | `log-group-no-retention` | CloudWatch log groups over 1 GiB with no retention set | Current log storage |
 
 The idle checks use CloudWatch metrics and are deliberately conservative: an instance only counts

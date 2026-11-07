@@ -34,6 +34,7 @@ CREATE_EVENTS = {
     },
     # Whoever deleted the instance left the backups behind
     "retained-rds-backup": {"DeleteDBInstance"},
+    "duplicate-trail": {"CreateTrail"},
     "long-stopped-instance": {"RunInstances"},
     "idle-load-balancer": {"CreateLoadBalancer"},
     "old-rds-snapshot": {
