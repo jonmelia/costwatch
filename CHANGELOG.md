@@ -5,6 +5,14 @@ All notable changes to costwatch. The format follows
 [semantic versioning](https://semver.org/): the CLI options, exit codes, check IDs and JSON
 output (`schema_version`) are the public interface.
 
+## [1.2.0] - 2026-11-07
+
+### Added
+- `duplicate-trail`: extra CloudTrail trails, priced from what the bill charged for extra copies of
+  management events in the last 30 days. Needs `cloudtrail:DescribeTrails` and
+  `ce:GetCostAndUsage`. Cost Explorer's $0.01 request is only made when an account has a second
+  trail.
+
 ## [1.1.0] - 2026-11-06
 
 ### Added
