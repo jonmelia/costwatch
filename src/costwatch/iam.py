@@ -35,6 +35,7 @@ POLICY = {
                 "logs:DescribeLogGroups",
                 "cloudtrail:LookupEvents",
                 "cloudtrail:DescribeTrails",
+                "cloudtrail:GetEventSelectors",
                 "ce:GetCostAndUsage",
             ],
             "Resource": "*",

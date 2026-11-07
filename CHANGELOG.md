@@ -5,6 +5,13 @@ All notable changes to costwatch. The format follows
 [semantic versioning](https://semver.org/): the CLI options, exit codes, check IDs and JSON
 output (`schema_version`) are the public interface.
 
+## [1.2.1] - 2026-11-07
+
+### Fixed
+- `duplicate-trail` no longer reports a trail that records data events only: those are charged
+  whichever trail records them, so it isn't a copy. Needs `cloudtrail:GetEventSelectors`;
+  `costwatch policy` prints it.
+
 ## [1.2.0] - 2026-11-07
 
 ### Added
