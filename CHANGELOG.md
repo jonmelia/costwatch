@@ -5,6 +5,11 @@ All notable changes to costwatch. The format follows
 [semantic versioning](https://semver.org/): the CLI options, exit codes, check IDs and JSON
 output (`schema_version`) are the public interface.
 
+## [1.2.2] - 2026-11-09
+
+### Changed
+- Prices updated from the AWS price list published 2026-11-07.
+
 ## [1.2.1] - 2026-11-07
 
 ### Fixed
@@ -101,6 +106,7 @@ output (`schema_version`) are the public interface.
 - `--owners`: owners from tags, then the CloudTrail creator.
 - `policy` command printing the read-only IAM policy.
 
+[1.2.2]: https://github.com/jonmelia/costwatch/compare/v1.2.1...v1.2.2
 [1.1.0]: https://github.com/jonmelia/costwatch/compare/v1.0.5...v1.1.0
 [1.0.5]: https://github.com/jonmelia/costwatch/compare/v1.0.4...v1.0.5
 [1.0.4]: https://github.com/jonmelia/costwatch/compare/v1.0.3...v1.0.4
