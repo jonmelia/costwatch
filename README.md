@@ -11,6 +11,8 @@ region's AWS list prices. It can also tell you who owns each resource (from tags
 and whether it's managed by Terraform or CloudFormation, so you know who to ask and how to
 remove it safely.
 
+Hosted version: [Strays](https://getstrays.com).
+
 ```
 $ costwatch scan --region eu-west-2 --tfstate s3://my-tf-state/      # example output
 Account 123456789012
