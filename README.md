@@ -6,12 +6,14 @@
 
 **Find wasted AWS spend, and who left it running.**
 
-costwatch scans an AWS account for idle and orphaned resources and prices each one with that
-region's AWS list prices. It can also tell you who owns each resource (from tags or CloudTrail)
-and whether it's managed by Terraform or CloudFormation, so you know who to ask and how to
-remove it safely.
+costwatch is a free, open-source, read-only command-line tool that finds unused AWS resources:
+unattached EBS volumes, old snapshots and AMIs, idle EC2 and RDS instances, idle load balancers
+and NAT gateways, unused Elastic IPs and more. It prices each one with that region's AWS list
+prices, tells you who owns it (from tags or CloudTrail) and whether Terraform or CloudFormation
+manages it, so you know who to ask and how to remove it safely.
 
-Hosted version: [Strays](https://getstrays.com).
+Hosted version, which asks each owner in Slack or Microsoft Teams and keeps a record:
+[Strays](https://getstrays.com).
 
 ```
 $ costwatch scan --region eu-west-2 --tfstate s3://my-tf-state/      # example output
@@ -187,6 +189,16 @@ result = scan(
 for finding in result.findings:
     print(finding.check, finding.resource_id, round(finding.monthly_cost, 2))
 ```
+
+## How it compares
+
+- **AWS Trusted Advisor and Cost Optimization Hub** show some of the same waste, and the full
+  Trusted Advisor checks need a paid AWS Support plan. costwatch is free, scans every enabled
+  region in one run, and adds who owns each resource and whether Terraform manages it.
+- **Cost Explorer** shows what you spent by service, not which resources are unused.
+- **Cloud Custodian** is a policy engine: you write rules and it can act on them. costwatch has no
+  rules to write and never changes anything; it lists what to look at, priced, with the owner.
+- **Prowler and AWS Security Hub** check security settings, not wasted spend.
 
 ## Development
 
