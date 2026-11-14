@@ -15,6 +15,8 @@ manages it, so you know who to ask and how to remove it safely.
 Hosted version, which asks each owner in Slack or Microsoft Teams and keeps a record:
 [Strays](https://getstrays.com).
 
+![costwatch scanning a demo AWS account: unattached volumes, an idle load balancer and unused Elastic IPs, each priced per month, then the total](docs/costwatch-scan.gif)
+
 ```
 $ costwatch scan --region eu-west-2 --tfstate s3://my-tf-state/      # example output
 Account 123456789012
@@ -57,6 +59,18 @@ costwatch scan --format markdown -o waste.md    # for a PR, issue or wiki
 costwatch checks                                # list the checks
 costwatch policy                                # IAM policy for a read-only role
 ```
+
+## Videos
+
+[![How to find unused AWS resources (and who left them there)](https://img.youtube.com/vi/BbEjwi123hM/mqdefault.jpg)](https://youtu.be/BbEjwi123hM)
+[![Finding unused AWS resources: the hard way vs costwatch](https://img.youtube.com/vi/R6yskOJvues/mqdefault.jpg)](https://youtu.be/R6yskOJvues)
+
+- [How to find unused AWS resources (and who left them there)](https://youtu.be/BbEjwi123hM)
+  (2 min): install, read-only access, scanning, owners and Terraform, and CI.
+- [The hard way vs costwatch](https://youtu.be/R6yskOJvues) (1.5 min): the same checks by hand
+  with the AWS CLI, then one command.
+
+Both use a made-up demo account, with subtitles.
 
 ## Checks
 
@@ -192,6 +206,10 @@ for finding in result.findings:
 
 ## How it compares
 
+- **The AWS CLI by hand.** You can find the same things yourself: loop over every region for each
+  kind of resource, look each one's price up in the AWS Price List API, then search CloudTrail
+  resource by resource to find who created it. costwatch does all of that in one command and adds
+  up the totals ([video](https://youtu.be/R6yskOJvues)).
 - **AWS Trusted Advisor and Cost Optimization Hub** show some of the same waste, and the full
   Trusted Advisor checks need a paid AWS Support plan. costwatch is free, scans every enabled
   region in one run, and adds who owns each resource and whether Terraform manages it.
